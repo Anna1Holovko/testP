@@ -1,0 +1,9 @@
+<apex:page standardController="Sales_Order__c" extensions="PODPreviewExtension" action="{!saveAttachment}">
+    <apex:messages />
+    <center><br/><br/> 
+        <apex:form >
+            <apex:commandButton value="Go To Detail Page" action="{!cancel}" title="Go to Quote Detail Page" styleClass="btn blue_btn_style" style="width: 185px !important;margin-right: 20px;"/>
+        </apex:form><br/>
+        <apex:iframe src="{!pdfURL}" height="650px" width="700px" scrolling="false" rendered="{!pdfURL != null}"/>
+   </center>
+</apex:page>

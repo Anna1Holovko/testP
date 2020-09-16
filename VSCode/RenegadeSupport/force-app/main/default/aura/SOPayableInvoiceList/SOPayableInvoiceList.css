@@ -1,0 +1,25 @@
+.THIS {
+}
+
+.THIS .slds-scope .slds-table_header-fixed thead th, 
+.THIS .slds-scope .slds-table--header-fixed thead th {
+    width: auto !important;
+    white-space: normal;
+}
+.THIS .slds-scope .slds-table_header-fixed thead th *, 
+.THIS .slds-scope .slds-table--header-fixed thead th * {
+    width: auto !important;
+}
+
+.THIS .slds-truncate {
+    max-width: unset !important;
+    overflow: unset  !important;
+    text-overflow: initial !important;
+    white-space: normal !important;
+}
+.THIS .slds-th__action {
+    height: auto;
+}
+.THIS .slds-cell-fixed {
+    position: relative;
+}

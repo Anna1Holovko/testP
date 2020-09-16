@@ -1,0 +1,54 @@
+@isTest
+public class  CaseActiveSalesOrdersAlertControllerTest {
+    public static Google_API__c googleAPI;
+    public static MagentoAuth__c magentoAuth;
+    public static MagentoTokens__c magentoToken;
+    
+    @testSetup static void setUp() {
+        magentoAuth = new MagentoAuth__c(Name='MagentoOAuth', AccessTokenURL__c='http://stage01.colemanfurniture.com/oauth/token',
+                                        AuthorizationURL__c='http://stage01.colemanfurniture.com/admin/oauth_authorize',
+                                        CallbackURL__c='https://c.cs41.visual.force.com/apex/CompleteAuth', password__c='rfgstage0987',
+                                        ClientKey__c='ulzh3hgcx5pcmfkvbcd7x369bxfqjzmp',ClientSecret__c='p1khnuudmoowwiq1avhx8cjj9g573j70',
+                                        RequestTokenURL__c='http://stage01.colemanfurniture.com/oauth/initiate/',
+                                        RestEndpoint__c='http://stage01.colemanfurniture.com/api/rest',username__c='stage');
+        insert magentoAuth;
+        
+        magentoToken = new MagentoTokens__c(Name='OAuth', isAccess__c=false,owner__c='00555000000IFiGAAW',
+                                           secret__c='vrz4dsnqxlf7uj3cq9qs89meferbyf5g', token__c='mbxbk9y7ylsx9kh4lay7y1fvmqursrcb');
+        
+        insert magentoToken;
+        
+        googleAPI = new Google_API__c(Name='Google API',Key__c='AIzaSyCAmP-yM5hc67O4stT-VyzMRmDTaVYfXzQ');
+        insert googleAPI;
+    }
+    
+    static testMethod void DisplayAsTrue()
+    {
+        Account ac = TestUtil.createCustomerAccount(); 
+        
+        Account deliveryAccount = TestUtil.createDeliveryAccount();
+        
+        Account manufactureAccount = TestUtil.createManufacturerAccount(true,false, 'Email');
+        
+        Products__c configPro = TestUtil.createConfigProduct();
+        
+        Products__c pro = TestUtil.createSimpleProduct(configPro.id,manufactureAccount.id);
+        
+        Sales_Order__c so = TestUtil.createsalesOrder(ac.id, deliveryAccount.id, Null);
+        Sales_Order__c so1 = TestUtil.createsalesOrder(ac.id, deliveryAccount.id, Null);
+        
+        SO_Line_Items__c Sol = TestUtil.createsalesOrderLineItem(so.id, pro.id, null,null,2);
+        Case cas = TestUtil.createCase(so.Id, null, 'Change/Cancellation', 'Sales Dept.');
+        
+        Test.startTest();
+        PageReference pref = Page.CaseActiveSalesOrdersAlertPage;
+        test.setCurrentPage(pref);
+        ApexPages.currentPage().getParameters().put('Id',cas.id);
+        ApexPages.StandardController sc = new ApexPages.StandardController(so);   
+        
+        CaseActiveSalesOrdersAlertController controller = new CaseActiveSalesOrdersAlertController(sc);
+        controller.Display();
+        Test.StopTest();
+        system.assertEquals(true, controller.isNotify);
+    }    
+}

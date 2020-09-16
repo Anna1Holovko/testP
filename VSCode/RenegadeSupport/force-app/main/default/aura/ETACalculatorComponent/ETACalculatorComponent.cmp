@@ -1,0 +1,35 @@
+<aura:component implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome" access="global" controller="ETACalculatorController">
+    <aura:attribute name="recordId" type="String" access="global"/>
+    <aura:attribute name="data" type="Object" access="private"/>
+    <aura:attribute name="columns" type="List" access="private"/>
+    <aura:attribute name="columnsForCustomTable" type="List" access="private"/>
+    <aura:attribute name="dataForCustomTable" type="Object[]" />
+    <aura:attribute name="sortedData" type="Object[]" />
+    <aura:attribute name="searchString" type="String" default=""/>
+    <aura:attribute name="productName" type="String" default=""/>
+    <aura:attribute name="productSKU" type="String" default=""/>
+    <aura:attribute name="timer" type="Object" default=""/>
+    <aura:attribute name="isLoaded" type="Boolean" default="false"/>
+    
+    <aura:attribute name="manufacturerInventory" type="String" default=""/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--<aura:handler name="change" value="{!v.recordId}" action="{!c.doInit}"/> =={!v.recordId}===--> 
+    <aura:if isTrue="{!v.isLoaded}">
+        <div style="height: 300px">
+            <lightning:input value="{!v.searchString}" titel="search string" onchange="{!c.sort}" placeholder="Type for search"/>
+            <div class="slds-scrollable_y scroller">
+            <c:CustomDataTable_Component 
+                    columns="{!v.columnsForCustomTable}"
+                    lines="{!v.sortedData}" />
+            </div>
+        </div>
+        <aura:set attribute="else">
+            <div class="spinner">
+                <lightning:spinner alternativeText="Loading" size="medium" />
+            </div>
+        </aura:set>
+    </aura:if>
+
+   
+    
+</aura:component>

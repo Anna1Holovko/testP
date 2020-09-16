@@ -1,0 +1,42 @@
+<aura:component>
+  <aura:attribute name="type" type="String" />
+  <aura:attribute name="label" type="String" />
+  <aura:attribute name="value" type="Object" />
+  <aura:attribute name="currencyCode" type="String" />
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+  <aura:if isTrue="{! or(or(v.type=='string', v.type=='multipicklist'), or(v.type=='picklist', v.type=='textarea'))}">
+    <aura:unescapedHtml value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!or(v.type=='number', v.type=='double')}">
+    <!--ui:outputNumber value="{!v.value}"/-->
+    <lightning:formattedNumber value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='currency'}">
+    <ui:outputCurrency value="{!v.value}" currencyCode="USD" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='percent'}">
+    <lightning:formattedNumber value="{!v.value}" style="percent" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='date'}">
+    <ui:outputDate value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='datetime'}">
+    <ui:outputDateTime value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='time'}">
+    <lightning:formattedTime value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='url'}">
+    <ui:outputURL value="{!'/'+v.value}" label="{!v.label}" target="_blank" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='email'}">
+    <ui:outputEmail value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='boolean'}">
+    <ui:outputCheckbox value="{!v.value}" />
+  </aura:if>
+  <aura:if isTrue="{!v.type=='phone'}">
+    <ui:outputPhone value="{!v.value}" />
+  </aura:if>
+</aura:component>

@@ -1,0 +1,65 @@
+<aura:component controller="ManageShipmentLineItemsController">
+  <aura:attribute name="isClassic" type="Boolean" />
+  <aura:attribute name="selectedLine" type="Object" />
+  <aura:attribute name="firstGroup" type="Integer" />
+  <aura:attribute name="secondGroup" type="Integer" default="1" />
+
+  <aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+  <aura:registerEvent
+    name="closeEvent"
+    type="c:ManageShipmentLineItemsCloseEvent"
+  />
+
+  <lightning:notificationsLibrary aura:id="notifLib" />
+  <lightning:overlayLibrary aura:id="overlayLib" />
+  <lightning:spinner
+    variant="brand"
+    size="large"
+    aura:id="mainSpinner"
+    class="spinnerBackground slds-hide"
+  />
+  <aura:html tag="style">
+    .slds-modal .slds-modal__close { display: none; }
+  </aura:html>
+  <div class="slds-grid slds-wrap slds-size_1-of-1 slds-large-size_3-of-12">
+    <div style="height: 100%;">
+      <section class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container" style="max-width: 20rem;">
+          <div class="slds-modal__content slds-p-around_medium">
+            <lightning:buttonGroup class="slds-chat-bookend">
+              <lightning:button label="Save" onclick="{!c.saveSplit}" />
+              <lightning:button label="Cancel" onclick="{!c.cancel}" />
+            </lightning:buttonGroup>
+            <p
+              >How would you like to split
+              {!v.selectedLine.Shipment_Product_Quantity__c} items?
+            </p>
+            <div>
+              <lightning:input
+                value="{!v.firstGroup}"
+                type="number"
+                name="input1"
+                label="Group 1"
+                step="1"
+                min="1"
+                max="{!v.selectedLine.Shipment_Product_Quantity__c-1}"
+                onchange="{!c.changeInputs}"
+              />
+              <lightning:input
+                value="{!v.secondGroup}"
+                type="number"
+                name="input1"
+                label="Group 2"
+                step="1"
+                min="1"
+                max="{!v.selectedLine.Shipment_Product_Quantity__c-1}"
+                onchange="{!c.changeInputs}"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div> </div
+  ></div>
+</aura:component>

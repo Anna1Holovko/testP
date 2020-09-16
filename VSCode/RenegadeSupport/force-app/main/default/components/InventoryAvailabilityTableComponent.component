@@ -1,0 +1,41 @@
+<apex:component >
+    TEST
+    <apex:attribute name="classHeaderName" description="class name for table header" type="String" required="false"/>
+    <apex:attribute name="classBodyName" description="class name for table body" type="String" required="false"/>
+    <apex:attribute name="shipmentLineItemList" description="shipmentLineItemList" type="Shipment_Line_Item__c[]" required="false"/>
+    <!-- <tr class="{!classHeaderName} inventory-select-table-header">
+        
+        <td style="width: 7%; "><b>In Stock</b></td>
+        <td style="width: 15%;">Product Name</td>
+        <td style="width: 5%;">Quantity</td>
+        <td style="width: 13%;">Shipment Product Name</td>
+        <td style="width: 13%;">Shipment Product SKU</td>                                             
+
+        <td style="width: 10%;">Magento order number</td>
+        <td style="width: 10%;">Item Condition</td> 
+        <td style="width: 15%;">Shipment Item Status</td>
+    </tr> -->
+    <!-- <apex:repeat value="{!shipmentLineItemList}" var="ship">
+        <tr class="{!classHeaderName+classBodyName}">
+            <apex:outputPanel  style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c != 'Hold As Stock'}">
+                <td style="width: 7%;">&#10006;</td>
+            </apex:outputPanel>
+            <apex:outputPanel style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c == 'Hold As Stock'}">
+                <td style="width: 7%;">&#10004;</td>
+            </apex:outputPanel>                                                                         
+            <td style="width: 15%;">{!ship.Product_Name__c}</td>
+            <td style="width: 5%;">{!ship.Quantity__c}</td>  
+            <td style="width: 13%;">{!ship.Shipment_Product_Name__c}</td>
+            <td style="width: 13%;">{!ship.Shipment_Product_SKU__c}</td> 
+            <td style="width: 10%;">
+                <apex:outputLink value="/{!ship.Shipment__r.Related_Sales_Order__r.Id}" target="_blank">
+                    {!ship.Shipment__r.Related_Sales_Order__r.Magento_order_No__c}
+                </apex:outputLink>
+            </td>
+            <td style="width: 10%;">{!ship.Furniture_Condition__c}</td>    
+            <td style="width: 15%;">{!ship.Shipment_Item_Status__c}</td>
+            
+        </tr>
+        
+    </apex:repeat>  -->
+</apex:component>

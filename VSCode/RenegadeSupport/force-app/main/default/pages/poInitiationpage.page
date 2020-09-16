@@ -1,0 +1,1366 @@
+<apex:page standardController="Sales_Order__c" extensions="salesOrderelatedlistController" sidebar="false" showHeader="false" docType="html-5.0" action="{!init}" id="pageId">
+    
+    <!-- !POFielddisplay.Notes__c} -->
+    <apex:form id="formId">
+        <apex:stylesheet value="{!URLFOR($Resource.renegade_stylesheet)}" />
+        <html> 
+            <head>  
+                <apex:outputPanel id="scriptPanelMainId">
+                <script type="text/javascript">
+                        
+                    window.onbeforeunload = function () {
+                        return "Are you sure you want to leave?";
+                    };
+                    var rows1 = '';
+                    $(document).ready(function(){
+                        rows1 = $('table.showhideclass tr');
+                        var rowCount = $('.table-fixed tr').length;
+                        if(rowCount > 4){
+                            $( ".table-fixed>thead" ).css( "width", "97.5" + "%");
+                            $( ".table-fixed>tbody" ).css( "height", "243" + "px");
+                            // $( ".table-fixed>tbody" ).css( "height", "auto");
+                        }
+                        else{
+                            $( ".table-fixed>thead" ).css( "width", "99.3" + "%");
+                            $( ".table-fixed>tbody" ).css( "height", "auto");
+                        }
+                        
+                        var rowCount2 = $('.table-fixed2 tr').length;
+                        if(rowCount2 > 4){
+                            $( ".table-fixed2>thead" ).css( "width", "97.5" + "%");
+                            $( ".table-fixed2>tbody" ).css( "height", "243" + "px");
+                            // $( ".table-fixed>tbody" ).css( "height", "auto");
+                        }
+                        else{
+                            $( ".table-fixed2>thead" ).css( "width", "99.3" + "%");
+                            $( ".table-fixed2>tbody" ).css( "height", "auto");
+                        }
+                        
+                        ////////////
+                        var rows = $('table.showhideclass tr');
+                        var black1 = rows.filter('.black').hide();
+                        var white1 = rows.filter('.white').hide();
+                        // var white1 = rows.filter('.black').hide();
+                        // var white1 = rows.filter('.black_Pwhite').hide();
+                        $('[class^=black_P]').hide();
+                        $('[class^=black]').hide();
+                        var black0 = rows.filter('.black0').hide();
+                        var white0 = rows.filter('.white0').hide();
+                        
+                        var clicked = false;
+
+                        //// created rc .................end                    
+                        var modal = document.getElementById("myModal");
+                        var span = document.getElementsByClassName("close")[0];
+                        span.onclick = function() {
+                            modal.style.display = "none";
+                        }
+                        function showPopup(your_variable){
+                            
+                            $(".modal-body").html('<table>' + your_variable + '</table>');
+                            var modal = document.getElementById("myModal");
+                            modal.style.display = "block";
+                        }                           
+                        ///////
+                        
+                    });
+
+                    
+                    
+                    function myFunction() {
+                        return "You will reset the Data if you Leave this Page!!";
+                    }
+                    
+                    function focusSection()
+                    {
+                        document.getElementById("etaId").focus();
+                        //   alert('test');
+                    }
+                    function focusSectionError()
+                    {
+                        document.getElementById("ErrorId3").focus();
+                        // window.onbeforeunload = null;
+                        // alert('test');
+                    }
+                    /***************** Page Redirection ******************/
+                    
+                    function goToHomePage() {
+                        window.location = '/home/home.jsp';
+                    }
+                    function showtab(id){
+                        document.getElementById(id).style.visibility="visible";
+                    }
+                    
+                    /***************** Page Redirection ******************/
+                    //var initialDelivery = '';
+                    //var originDelivery = '';
+                    window.onload = function() {
+                        //initialDelivery = document.querySelector('[id$="deliveryFieldId"]').value;                
+                        changeButtonColor();
+                    };
+                    function changeButtonColor() {
+                        var orderLines = document.getElementsByClassName("OrderItemLine");
+                        var suggestedDeliveryName = !!document.querySelector('[id$="deliveryFieldId"]')?document.querySelector('[id$="deliveryFieldId"]').value:''; 
+                        for(var i = 0; i < orderLines.length; i++){
+                            var inventoryDeliveryName = orderLines[i].querySelector('[class$="inventoryDeliveryName"]').innerHTML.trim();
+                            var color = (!!suggestedDeliveryName && suggestedDeliveryName == inventoryDeliveryName) ? 'green' : 'yellow';
+                            var button = orderLines[i].querySelector('[id$="takeFromInventory"]');
+                            if(!!button){
+                                button.style.cssText = 'background-color: ' + color +  ' !important';
+                            }
+                        }
+
+                        var inventoryLine = document.getElementsByClassName("inventorySubData");
+                        for(var i = 0; i < inventoryLine.length; i++){
+                            var inventoryDeliveryName = inventoryLine[i].querySelector('[class$="inventoryDeliveryCompanyName"]').innerHTML.trim();
+                            var color = (!!suggestedDeliveryName && suggestedDeliveryName == inventoryDeliveryName) ? 'green' : 'yellow';
+                            var button = inventoryLine[i].querySelector('[id$="takeFromInventory"]');
+                            if(!!button){
+                                button.style.cssText = 'background-color: ' + color +  ' !important';
+                            }
+                        }
+                        //document.querySelector('[id$="takeFromInventory"]').style.cssText = 'background-color: ' + (document.querySelector('[id$="deliveryFieldId"]').value == initialDelivery ? 'green' : 'yellow') + ' !important';
+                    }
+                    
+                    function updateNotesValue(param){
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.salesOrderelatedlistController.updateNotes}', 
+                            param, 
+                            (result, event) => {
+                                if (event.status) {
+                                document.getElementsByClassName('notes-textarea')[0].value = result;
+                                updatedValueCb();
+                                } else if (event.type === 'exception') {
+                                    console.warn(event)// handle exception
+                                } else {
+                                    // handle error
+                                    console.error('2', event)
+                                }
+                            }
+                        );
+                    }
+                    getElemUnderPointer = function(e) {
+                        e.currentTarget.style.display = 'none';
+                        return document.elementFromPoint(e.clientX, e.clientY);
+                    }
+                    function clearAutocomplete(e){
+                        elem = getElemUnderPointer(e);
+                        Visualforce.remoting.Manager.invokeAction(
+                            '{!$RemoteAction.salesOrderelatedlistController.clearAutocompleteList}', 
+                            (result, event) => {
+                                elem.focus();
+                                setTimeout( ()=> elem.click(), 150);
+                                clearAutocompleteList();
+                            }
+                        );
+                        //
+                    }
+                    
+                    // show hide subtable logic ----------------------
+
+                    function setHideShowFunction(htmlElementCollection, isDisplayed){
+                        [...htmlElementCollection].filter(elem => {
+                                elem.classList = [...elem.classList].filter(item => item != (isDisplayed ? 'element-show' : 'element-hide')).join(' ');
+                                elem.classList.add(isDisplayed ? 'element-hide' : 'element-show');
+                            });
+                    }
+
+                    function showhide(num) {  
+                        var tableRows = getElementsByClassName(num);
+                        var tableRowsBody = getElementsByClassName(num+'white');
+                        var isDisplayed = [...tableRows[0].classList].includes("element-show");             
+                        if(!!tableRows){  
+                            setHideShowFunction(tableRows, isDisplayed);
+                            setHideShowFunction(tableRowsBody, isDisplayed);                  
+                        }
+                        
+                    }  
+                    
+                    function showChooseInventory(className) {
+                        var chooseInventoryTableElements = getElementsByClassName(className);
+                        var isDisplayed = [...chooseInventoryTableElements[0].classList].includes("element-show");               
+                        if(!!chooseInventoryTableElements){                                
+                            setHideShowFunction(chooseInventoryTableElements, isDisplayed);
+                            if(isDisplayed){
+                                setHideShowFunction(getElementsByClassName('sub'+className), isDisplayed);
+                            }
+                        }
+                    }  
+                    // show hide subtable logic ----------------------
+
+                    </script>  
+                    </apex:outputPanel>
+                <script>
+                var initialDelivery = '';
+                var elem;
+                </script>        
+                <title>Initiate Purchase Order</title> 
+                <apex:outputPanel id="scriptPanelId">
+                        <apex:stylesheet value="{!URLFOR($Resource.renegade_stylesheet)}"/> 
+                        <!--script src="//code.jquery.com/jquery-1.11.3.min.js"></script-->
+                        <apex:includeScript value="{!$Resource.jquery1113minjs}"/>
+                        <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js">
+                        </script>
+                        
+                        
+                </apex:outputPanel> 
+                <style>
+                    body input[type=text]{height: 23px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    padding: 0px 5px 0px 10px !important;}  
+                    body select{height: 27px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    padding: 0px 5px 0px 10px !important;}  
+                    
+                    .colHeadr {
+                    text-align:center;
+                    }  
+                    body .pbBody table.list tr.dataRow th, body .pbBody table.list tr.dataRow td {
+                    border-width: 0 0 1px 0;
+                    vertical-align: middle;
+                    text-align: center;
+                    }
+                    .sfdc_richtext img {
+                    border: 0;
+                    width: 70px !important;
+                    height: 45px !important;
+                    }
+                    .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+                    margin: 0;
+                    }
+                    .bPageBlock .detailList .dataCol {
+                    width: 0 !important;
+                    }
+                    .bPageBlock .detailList .labelCol {
+                    width: 0 !important;
+                    }
+                    .bPageBlock .labelCol{
+                    padding-right: 0px !important;
+                    padding-left: 0px !important;
+                    }
+                    .bPageBlock .dataCol {
+                    padding-right: 0px !important;
+                    padding-left: 5px;
+                    }
+                    .labelCol, body .print .topics-label {
+                    color: #4a4a56;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    }
+                    .totals-div{
+                    padding: 35px 20px 15px 0px;
+                    float: left;
+                    width: 100%;
+                    }
+                    .total-div-rows{
+                    float: right;
+                    width: 95%;
+                    padding: 5px 30px;
+                    text-align: right;
+                    }
+                    .total-div-row-label{
+                    font-weight: bold;
+                    font-size: 13px;
+                    }
+                    .total-div-row-grand{
+                    font-weight: bold;
+                    font-size: 16px;
+                    }
+                    .td-flds-div{
+                    width: 100%;
+                    float: left;
+                    padding: 5px 0px;
+                    }
+                    .Order-info-heading{
+                    background: #6f8992;
+                    padding: 2px 10px;
+                    font-weight:bold;
+                    color: #fff;
+                    font-size: 1em;
+                    line-height: 18px;
+                    min-height: 0;
+                    }
+                    .order-details-content{
+                    border: 1px solid #d6d6d6;
+                    background: #fafafa;
+                    width:96.6%;
+                    float:left;
+                    padding:10px;
+                    }
+                    .invoice-details-div{
+                    margin-bottom: 18px;
+                    }
+                    .invoice-details-div h3 {
+                    float: left;
+                    margin: 0.3em .5em 11px 0;
+                    color: #eb5e00;
+                    font-size: 1.25em;
+                    line-height: 1.2em;
+                    border-bottom: 4px solid #dfdfdf;
+                    padding-bottom: 0.25em;
+                    width: 100%;
+                    }
+                    .invoice-content-container{
+                    width:100%;
+                    float:left;
+                    }
+                    .invoice-content-inner-container{
+                    width:90%;
+                    margin:1% auto 0%;
+                    }
+                    .individualPalette .Custom8Block .tertiaryPalette{
+                    background-color: #6f8992 !important;
+                    }
+                    .Order-invoice-heading{
+                    background: #6f8992;
+                    padding: 2px 10px;
+                    font-weight:bold;
+                    color: #fff;
+                    font-size: 1em;
+                    line-height: 18px;
+                    min-height: 0;
+                    width:100%;
+                    }
+                    .create-invoice-btns{
+                    width:100%;
+                    float:left;
+                    margin-bottom:20px;
+                    }
+                    .create-inv-submit{
+                    float:right;
+                    }
+                    .message {
+                    border-radius: 4px;
+                    margin-bottom: 20px;
+                    }
+                    .create-iv-content_container{
+                    width: 90%;
+                    margin: 1% auto 1%;
+                    }
+                    .bill-add-rows {
+                    width: 100%;
+                    float: left;
+                    padding: 5px 0px;
+                    }
+                    .inner {
+                    width: 44.1%;
+                    }
+                    .invoice-details-div h3 {
+                    float: left;
+                    margin: 0.3em .5em 25px 0;
+                    color: #eb5e00;
+                    font-size: 1.25em;
+                    line-height: 1.2em;
+                    border-bottom: 4px solid #dfdfdf;
+                    padding-bottom: 0.25em;
+                    width: 100%;
+                    }
+                    
+                    /*test table styles*/
+                    .table-panel{
+                    margin-bottom: 20px;
+                    background-color: #fff;
+                    border: 2px solid threedface;
+                    border-radius: 8px;
+                    -webkit-box-shadow: 0 1px 1px rgba(0,0,0,.05);
+                    box-shadow: 0 1px 1px rgba(0,0,0,.05);
+                    border-color: #ddd;
+                    }
+                    .table-panel>.panel-heading {
+                    color: #333;
+                    background-color: #d3d3d3;
+                    border-color: #ddd;
+                    }
+                    .panel-heading{
+                    padding: 10px 15px;
+                    border-bottom: 1px solid transparent;
+                    border-top-left-radius: 5px;
+                    border-top-right-radius: 5px;
+                    }
+                    .table {
+                    width: 100%;
+                    max-width: 100%;
+                    margin-bottom: 20px;
+                    }
+                    .table-fixed tr{
+                    display: block;
+                    width: 101%;
+                    }
+                    .table>thead>tr>th {
+                    vertical-align: bottom;
+                    border-bottom: 2px solid #ddd;
+                    background-color: #F7F7F7;
+                    }
+                    
+                    /*.table-fixed thead {width: 97%;}*/
+                    
+                    .table-fixed tbody {
+                    height: 265px;
+                    overflow-y: auto;
+                    width: 100%;
+                    }
+                    .table-fixed tbody>tr {
+                    width:100%;
+                    float:left;border-collapse:separate;
+                    border-top: 1px solid #ddd;
+                    }
+                    .table-fixed thead, .table-fixed tbody, .table-fixed td, .table-fixed th {
+                    display: block;
+                    }
+                    .table-fixed tbody td, .table-fixed thead > tr> th {
+                    float: left;
+                    border-bottom-width: 0;
+                    padding: 4px 5.9px;
+                    line-height: 1.42857143;
+                    }
+                    .table-fld{
+                    width: 16%;
+                    }
+                    .table-fld-fld{
+                    width:7%;
+                    text-align:center;
+                    }
+                    .table-fld-fld-qty{width: 6%;text-align:center;}
+                    .table-fld-img {
+                    width:10%;
+                    text-align: center;
+                    }
+                    .legend-add-label {
+                    font-size: 18px;
+                    }  
+                    
+                    .table-panel>.panel-heading1 {
+                    color: #333;
+                    background-color: #E2DFD7;
+                    border-color: #ddd;
+                    height: 27px;
+                    } 
+                    #j_id0\3a formId\3a selmanufacturePanelId > div > h4{
+                    color: #333;
+                    background-color: #E2DFD7;
+                    border-color: #ddd;
+                    height: 27px;
+                    }  
+                    #j_id0\3a formId\3a selmanufacturePanelId > div{
+                    color: #333;
+                    background-color: #E2DFD7;
+                    border-color: #ddd;
+                    height: 27px;
+                    padding: 8px 0px 0px 0px;
+                    }  
+                    
+                    .bill-add-label {
+                    Font-weight:bold;
+                    }
+                    body .btn{
+                    background: #69c5ec !important;
+                    outline:0 !important;
+                    }
+                    .custPopup{
+                    background-color: white;
+                    z-index: 9999;
+                    position: fixed;
+                    margin-left: -500px;
+                    border-radius: 8px;
+                    width: 390px;
+                    margin-left: -455px;
+                    top: 27%;
+                    left: 66%;
+                    padding: 40px 40px;
+                    border: 2px solid threedface;
+                    }
+                    .popupBackground{
+                    background-color:black;
+                    opacity: 0.20;
+                    filter: alpha(opacity = 20);
+                    position: absolute;
+                    width: 100%;
+                    height: 309%;
+                    top: 0;
+                    left: 0;
+                    z-index: 9998;
+                    }
+                    .POinit_popup_div{
+                    width:100%;
+                    float:left;
+                    text-align:center;
+                    margin-bottom:25px;
+                    }
+                    .POinit_popup_div input{ height: 30px;
+                    border-radius: 3px;
+                    border: 1px solid #ccc;
+                    margin-bottom: 8px;
+                    padding: 0px 5px 0px 10px;
+                    }
+                    .POinit_popup_btns{
+                    
+                    font-family: 'Lato',sans-serif !important;
+                    }
+                    .POinit_popup_btns:hover {
+                    color:#fff;
+                    background-color:#2DA7DA !important;
+                    outline:0 !important;
+                    }
+                    .inv-bill-add-label{width:40%;float:left;font-weight:bold}
+                    a.closeX {
+                    position: absolute;
+                    right: -17px;
+                    top: 15px;
+                    width: 20px;
+                    background-color: #FFFDFD;
+                    color: black;
+                    margin-top: -13px;
+                    margin-right: 20px;
+                    padding-left: 3px;
+                    cursor: pointer;
+                    z-index: -1;
+                    font-size: 16px;
+                    font-weight: bold;
+                    text-decoration: none;
+                    }
+                    .outer-field-rows{width: 100%;
+                    float: left;
+                    margin-top: 20px;
+                    }
+                    .circle, .circle1, .circleChild {
+                    height: 25px;
+                    width: 25px;
+                    background-color: #00BFFF;
+                    border-radius: 50%;
+                    display: inline-block;
+                    cursor: pointer;
+                    }
+                    .halfcircle, .halfcircle1, .halfcircleChild{
+                    width: 25px;
+                    height: 25px;
+                    background: linear-gradient( -180deg, #dbe5e8, #dbe5e8 49%,  #00BFFF 51% ); 
+                    border-radius: 50%;
+                    display: inline-block;
+                    cursor: pointer;
+                    }
+                    /* .circle1{
+                    height: 25px;
+                    width: 25px;
+                    background-color: #00BFFF;
+                    border-radius: 50%;
+                    display: inline-block;
+                    }
+                    .halfcircle1{
+                    width: 25px;
+                    height: 25px;
+                    background: linear-gradient( -180deg, #dbe5e8, #dbe5e8 49%,  #00BFFF 51% ); 
+                    border-radius: 50%;
+                    display: inline-block;
+                    } */
+                    /* The Modal (background) */
+                    .modal {
+                    display: none; /* Hidden by default */
+                    position: fixed; /* Stay in place */
+                    z-index: 1; /* Sit on top */
+                    left: 0;
+                    top: 0;
+                    width: 100%; /* Full width */
+                    height: 100%; /* Full height */
+                    overflow: auto; /* Enable scroll if needed */
+                    background-color: rgb(0,0,0); /* Fallback color */
+                    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+                    -webkit-animation-name: fadeIn; /* Fade in the background */
+                    -webkit-animation-duration: 0.4s;
+                    animation-name: fadeIn;
+                    animation-duration: 0.4s
+                    }
+                    
+                    /* Modal Content */
+                    .modal-content {
+                    position: fixed;
+                    bottom: 0;
+                    background-color: #fefefe;
+                    width: 100%;
+                    -webkit-animation-name: slideIn;
+                    -webkit-animation-duration: 0.4s;
+                    animation-name: slideIn;
+                    animation-duration: 0.4s
+                    }
+                    
+                    /* The Close Button */
+                    .close {
+                    color: black;
+                    float: right;
+                    font-size: 28px;
+                    font-weight: bold;
+                    }
+                    
+                    .close:hover,
+                    .close:focus {
+                    color: #000;
+                    text-decoration: none;
+                    cursor: pointer;
+                    }
+                    
+                    .modal-header {
+                    padding: 2px 16px;
+                    background-color: #5cb85c;
+                    color: white;
+                    }
+                    
+                    .modal-body {padding: 2px 16px;}
+                    
+                    .modal-footer {
+                    padding: 2px 16px;
+                    background-color: #5cb85c;
+                    color: white;
+                    }
+                    .dropdown-wrap {
+                    position: relative;
+                    float: left;
+                    }
+                    
+                    .dropdown {
+                    position: absolute;
+                    top: 100%;
+                    border: 1px solid #e9e9e9;
+                    background: #fff;
+                    z-index: 1;
+                    border-radius: 3px;
+                    margin: -3px 0 3px;
+                    padding: 3px 0;
+                    box-shadow: 1px 2px 3px 0px #999;
+                    overflow: auto;
+                    max-height: 125px;
+                    }
+                    .dropdown ul {
+                    list-style-type: none;
+                    margin: 0;
+                    padding: 0;
+                    }
+                    .dropdown .list-item {
+                    padding: 5px 8px;
+                    cursor: pointer;
+                    margin-left: 0;
+                    font-size: 13px;
+                    }
+                    .dropdown .list-item:hover {
+                    background: #f6f7f8;
+                    }
+                    .dropdown .list-item span {
+                    pointer-events: none;
+                    }
+                    .manualorder-textarea {
+                    margin-bottom: 0;
+                    }
+                    .backdrop {
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    right: 0;
+                    z-index: 10000;
+                    }
+                    .backdrop.hidden {
+                    display: none;
+                    }
+                    .backdrop-wrap.dropdown-opened + * {
+                    z-index: 10001;
+                    position: relative;
+                    }
+
+                    .element-hide {
+                        display: none !important;
+                    }
+                    .element-show {
+                        display: block !important;
+                    }
+                    
+                    .choose-inventory-button {
+                        background-color: #69c5ec;
+                        cursor: pointer;
+                        height: 20px;
+                        width: 100px;
+                        display: inline-block;
+                        text-align: center;
+                        border: 1px;
+                        
+                    }
+
+                    .noselect {
+                        -webkit-touch-callout: none; /* iOS Safari */
+                        -webkit-user-select: none; /* Safari */
+                        -khtml-user-select: none; /* Konqueror HTML */
+                        -moz-user-select: none; /* Old versions of Firefox */
+                        -ms-user-select: none; /* Internet Explorer/Edge */
+                        user-select: none; /* Non-prefixed version, currently
+                                                        supported by Chrome, Edge, Opera and Firefox */
+                    }
+
+                    /* Add Animation */
+                    @-webkit-keyframes slideIn {
+                    from {bottom: -300px; opacity: 0} 
+                    to {bottom: 0; opacity: 1}
+                    }
+                    
+                    @keyframes slideIn {
+                    from {bottom: -300px; opacity: 0}
+                    to {bottom: 0; opacity: 1}
+                    }
+                    
+                    @-webkit-keyframes fadeIn {
+                    from {opacity: 0} 
+                    to {opacity: 1}
+                    }
+                    
+                    @keyframes fadeIn {
+                    from {opacity: 0} 
+                    to {opacity: 1}
+                    }   
+
+                    /* Inventory select table styles */
+                    .inventory-select-table-header {
+                        background-color: #f7f7f7;
+                    }
+                </style>
+                <apex:outputPanel id="displayInventoryShipmentItemsScriptPanel">
+                    <script>
+                        
+                        
+                    </script>
+                </apex:outputPanel>
+            </head>
+            <body>
+                <apex:actionFunction name="updatedValueCb" rerender="autoCompletePanel, backdropPanel"></apex:actionFunction>
+                <!-- The Modal -->
+                <div id="myModal" class="modal">
+                    
+                    <!-- Modal content -->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <span class="close">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            
+                        </div>
+                        <div class="modal-footer">
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <apex:outputpanel id="messageId" >
+                    <apex:actionstatus id="message">
+                        <apex:facet name="start">
+                            <div class="waitingSearchDiv" id="el_loading" style="background-color: #DCD6D6;height:100%;opacity:0.65;width:100%;position:fixed;"> 
+                                <div class="waitingHolder" style="top:120.2px; width: 91px;">
+                                    <img class="waitingImage" src="{!$Resource.loading}" title="Please Wait..." />
+                                    <span class="waitingDescription">Loading...</span>
+                                </div>
+                            </div>
+                        </apex:facet>
+                    </apex:actionstatus>
+                </apex:outputpanel>
+                <apex:outputPanel id="acknowledgementPopup">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}"/>
+                    <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!displayPopUp}">
+                        <apex:pageMessages id="innerMeassageId"></apex:pageMessages> 
+                        <apex:commandLink value="" action="{!closePopup}" reRender="acknowledgementPopup,stockpopup" styleClass="closeX">&#10006;</apex:commandLink>
+                        <div class="POinit_popup_div" > <apex:outputText value="Please enter a PO Acknowledgement number." style="font-size:16px;color:#2797C7;font-weight:bold"></apex:outputText> </div>
+                        <div class="POinit_popup_div" style="margin-bottom:20px"><apex:inputText value="{!trackingnumberId}" style="{!errorStyle}"></apex:inputText></div>
+                        <div class="POinit_popup_div" style="margin-bottom:0;">
+                            <apex:commandButton value="Update Now" action="{!updateNow}" styleClass="POinit_popup_btns" rerender="acknowledgementPopup,innerMeassageId,trackingnumberId,stockpopup,ETAPanelId,communicationpannelId,ETAinfoId,etaId" style="padding: 7px 26px; margin-right: 24px;"/>
+                            <apex:commandButton value="Add Later" action="{!addLater}" styleClass="POinit_popup_btns" rerender="acknowledgementPopup,innerMeassageId,trackingnumberId,stockpopup,ETAPanelId,communicationpannelId,ETAinfoId,etaId" style="padding: 7px 24px;"/>
+                        </div>  <br/>
+                        <apex:outputPanel rendered="{!if(orderCommunicationType == 'Website(SSO)',true,false)}">
+                            <div class="field-rows" style="margin-top: 20px;">
+                                <b>Website : </b>
+                                <apex:commandLink value="{!manufacturerName}" onclick="window.open('{!websiteURL}', '_blank');" reRender="tempId" />
+                                <!--apex:OutputText value="{!websiteURL}"/-->
+                            </div>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                
+                <apex:outputPanel id="stockpopup">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!stockdisplayPopup}"/>
+                    <apex:outputPanel styleClass="custPopup" layout="block" rendered="{!stockdisplayPopup}">
+                        <apex:commandLink value="" action="{!closePopup}" reRender="acknowledgementPopup,stockpopup" styleClass="closeX">&#10006;</apex:commandLink>
+                        <div class="POinit_popup_div" > <apex:outputText value="Stock Availability Status." style="font-size:16px;color:#2797C7;font-weight:bold"></apex:outputText> </div>
+                        <div class="POinit_popup_div" style="margin-bottom:0;">
+                            <apex:commandButton onclick="this.disabled=true;" value="Available" action="{!stockAvailable}" styleClass="POinit_popup_btns" rerender="stockpopup,communicationpannelId,acknowledgementPopup" style="padding: 7px 26px; margin-right: 24px;"/>
+                            <apex:commandButton onclick="this.disabled=true;" value="Not Available" action="{!stocknotAvailable}" styleClass="POinit_popup_btns" rerender="stockpopup,secondPagePanel" style="padding: 7px 24px;"/>
+                        </div>  <br/>
+                        <apex:outputPanel rendered="{!if(orderCommunicationType == 'Website(SSO)',true,false)}">
+                            <div class="field-rows" style="margin-top: 20px;">
+                                <b>Website : </b>
+                                <apex:commandLink value="{!manufacturerName}" onclick="window.open('{!websiteURL}', '_blank');" reRender="tempId" />
+                                <!--apex:OutputText value="{!websiteURL}"/-->
+                            </div>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+
+                <div id="main-wrapper">
+                    <!-- Header effect -->
+                    <div class="effect6" style="margin-bottom: 25px;">  
+                        <div class="header_container">
+                            <apex:image value="{!$Resource.coleman_header_logo}" />
+                            <div style="float:right;width: 19%;padding: 20px 40px;">
+                                <apex:commandButton status="message" id="Cancel" value="Cancel" action="/{!Sales_Order__c.id}" styleClass="Header-btns" style="background: #F3F3F3 !important;font-size:11px;margin-right:10px;float:right"/>
+                                <apex:commandButton status="message" id="home" value="Home Page" styleClass="Header-btns" oncomplete="goToHomePage()" style="background: #F3F3F3 !important;font-size:11px;margin-right:10px;float:right"/>
+                            </div>
+                        </div>
+                    </div> <!--end of Header effect -->
+                    <div class="create-iv-content_container" style="margin-top:109px;">
+                        <apex:pageMessages />
+                        <apex:outputPanel id="secondPagePanel">
+                            <!-- Sales Order Line Item table -->
+                            <div class="table-panel">
+                                <div class="panel-heading">
+                                    <h4> Order: #{!SO_Obj.Magento_order_No__c} </h4>
+                                </div> 
+                                <div class="panel-heading">
+                                    <h4> Purchase Order Items <img src="{!$Resource.colorexplanation}" align="right" style="height: 27px;"/></h4>
+                                </div> 
+                                <apex:outputPanel id="selectedtablePanel">
+                                    <apex:outputpanel id="selmanufacturePanelId" style="margin-bottom:10px;">
+                                        <!--apex:actionFunction name="sendInventoryMethod" immediate="true" action="{!sendInventory}" reRender="formId" status="message"/--> 
+                                        <div class="panel-heading1">
+                                            <h4 style="margin-left: 534px;font-size:15px;">
+                                                Manufacturer Items 
+                                            </h4>
+                                        </div>
+                                        <apex:variable value="0" var="num"/>
+                                        <apex:variable value="0" var="numi"/>
+                                        <table width="100%" class="table table-fixed showhideclass">
+                                            <thead>
+                                                <tr>
+                                                    <th class="table-fld" style="width: 11%;">Product</th>
+                                                    <th class="table-fld-img" style="width: 10%;">Product SKU</th>
+                                                    <th class="table-fld-img" style="width: 10%;">Image</th>
+                                                    <th class="table-fld-img">Bundled</th>
+                                                    <th class="table-fld-img" style="width: 10%;"><label title="Quantity Ordered from Sales Order">Qty Ordered</label></th>
+                                                    <!-- <th class="table-fld-img" style="width: 10%;">Inventory Qty</th>
+<th class="table-fld-img" style="width: 10%;">Inventory Availability</th> -->
+                                                    <!--th class="table-fld-img"><label title="Quantity to Manufacturer PO.">QTY</label></th-->
+                                                    <th class="table-fld-img" style="width: 10%;">Manufacturer</th>
+                                                    <th class="table-fld-img"><label title="Weight in pounds">Weight</label></th>
+                                                    <th class="table-fld-img" style="width: 10%;">Inventory Qty</th>
+                                                    <!------------------------commented out By RC ---------------------------->
+                                                    <th class="table-fld-img" style="width: 10%;">Inventory Availability</th>
+                                                    <!---------------------------end ----------------------------- -->
+                                                </tr>       
+                                            </thead>
+                                            <tbody>
+                                                <apex:repeat value="{!selectedOrderwrapper}" var="item">
+                                                    
+                                                    <!--<apex:repeat value="{!item.inventories}" var="inv1">--> 
+                                                    <tr valign="center" class="OrderItemLine" > 
+                                                        <td class="table-fld" style="width: 11%;"><b style="float:left;"> {!item.SoItem.Product_Name__c}</b></td> 
+                                                        <td class="table-fld-img" style="width: 10%;"> <b>SKU : </b>{!item.SoItem.ProductSKU__c}</td>
+                                                        <td class="table-fld-img" valign="center" style="width: 10%;"><img src="{!item.SoItem.ProductImageUrl__c}" width="70px" height="45px"/></td>
+                                                        <td class="table-fld-img" valign="center">
+                                                            <apex:inputCheckbox value="{!isBundeled}" disabled="true" rendered="{!if(item.SoItem.Bundle_Item__c != Null,true,false)}"/>
+                                                            <apex:inputCheckbox disabled="true" rendered="{!!if(item.SoItem.Bundle_Item__c != Null,true,false)}"/>
+                                                        </td>
+                                                        <td class="table-fld-img" valign="center" style="width: 10%;">
+                                                            <apex:inputText value="{!item.Quantity}" size="3" ></apex:inputText>
+                                                        </td> 
+                                                        <td class="table-fld-fld" valign="center" style="width: 10%;"><apex:outputText style="text-align:center;" value="{!item.SoItem.Manufacturer__c}"></apex:outputText><br/>
+                                                            <!--apex:outputText value="[ No Inventory ]" style="color:blue;" rendered="{!if(item.isLessinventorythanquantity == true,true,false)}" ></apex:outputText-->
+                                                            <apex:commandbutton id="a" value="Take From Inventory" action="{!sendInventory}" reRender="manufacturerpanelId,scriptPanelId,selectedtablePanel,weightId,suggestedTruckingId" status="message" rendered="{!if(item.isLessinventorythanquantity == true && item.inventory.RecordType.Name == 'Own Inventory',true,false)}" >
+                                                                <apex:param name="itemrem" value="{!item.SoItem.id}" assignTo="{!soItem1Id}"/>
+                                                                <apex:param name="invrem" value="{!item.inventory.id}" assignTo="{!inventoryId}"/>
+                                                            </apex:commandbutton> 
+                                                            <div style="visibility: hidden;" class="inventoryDeliveryName">
+                                                                {!item.inventory.Delivery_Company_Name__c}
+                                                            </div>
+                                                            <apex:commandbutton id="takeFromInventory" style="background-color: green !important;" value="Take From Inventory" action="{!sendInventory}" reRender="selectedtablePanel" status="message" rendered="{!if(item.inventory != null && item.isLessinventorythanquantity == true && item.inventory.RecordType.Name == 'Delivery Company Inventory',true,false)}" >
+                                                                <apex:param name="itemrem" value="{!item.SoItem.id}" assignTo="{!soItem1Id}"/>
+                                                                <apex:param name="invrem" value="{!item.inventory.id}" assignTo="{!inventoryId}"/>
+                                                            </apex:commandbutton> 
+
+                                                            <!-- <apex:commandLink style="text-decoration: none !important;" action="showChooseInventory(chooseInventory{!num}) "  rerender="" status="message" rendered="{!if(item.inventory == null && item.isLessinventorythanquantity == true,true,false)}">
+                                                                <apex:param name="itemrem" value="{!item.SoItem.id}" />
+                                                                <apex:commandbutton value="Choose Inventory" />
+                                                            </apex:commandLink>  -->
+                                                            <!-- {!showPopInvSec} -->
+                                                            <span onclick="showChooseInventory('chooseInventory{!num}');" class="noselect choose-inventory-button {!if(item.inventory == null && item.isLessinventorythanquantity == true, '', 'element-hide')}">
+                                                                Choose Inventory
+                                                                <!-- <apex:commandbutton style="text-decoration: none !important;" value="Choose Inventory" onClick="showChooseInventory('chooseInventory{!num}');return false;" reRender="false" status="message" rendered="{!if(item.inventory == null && item.isLessinventorythanquantity == true,true,false)}"/> -->
+                                                            </span>
+                                                        </td>
+                                                        
+                                                        <td class="table-fld-img" valign="center">{!item.weight} lb</td>
+
+                                                        <!--Commented out by RC-->
+                                                        <td class="table-fld-img" valign="center" style="width:10%;">{!item.inventoryQty} </td>
+                                                        
+                                                        <td class="table-fld-img" valign="center" style="width:10%;" >
+                                                            <apex:outputPanel rendered="{!item.iw.allItemsAsStack == true && item.inventory != null}">
+                                                                <span class="circle" onclick="showhide('black_P{!num}');"></span>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!item.iw.allItemsAsStack == false && item.inventory != null}">
+                                                                <span class="halfcircle" onclick="showhide('black_P{!num}');"></span>
+                                                            </apex:outputPanel>
+                                                            <!-- <span class="{!IF( item.iw.allItemsAsStack == true, 'circleChild', 'halfcircleChild')} {! If( item.inventory != null && item.inventory.size != 0, 'element-show','element-hide')}"  onclick="showhide('black_P{!num}');"></span> -->
+                                                        </td>
+                                                        
+                                                        <!--Commented out by RC-->
+                                                        <!-- <apex:outputPanel id="abcd"> -->
+                                                       
+                                                               
+                                                                <tr valign="center" class="element-hide {!IF(item.iwList != null && item.iwList.size != 0, 'chooseInventory'+num, '')}"><!--  -->
+                                                                    <td style="width: 15%; background-color: #F7F7F7;" rendered="{!item.iwList != null}">Warehouse</td>
+                                                                    <td style="width: 15%; background-color: #F7F7F7;" rendered="{!item.iwList != null}">Quantity</td>
+                                                                    <td style="width: 15%; background-color: #F7F7F7;" rendered="{!item.iwList != null}">Delivery Company</td>
+                                                                    <td style="width: 14%; background-color: #F7F7F7;" rendered="{!item.iwList != null}">Inventory Availability</td>
+                                                                    <td style="width: 11%; background-color: #F7F7F7;" rendered="{!item.iwList != null}">Take From Inventory</td>
+                                                                </tr>
+                                                                <apex:repeat value="{!item.iwList}" var="inv" >
+                                                                    
+                                                                    <tr valign="center" class="element-hide inventorySubData {!IF(item.iwList != null && item.iwList.size != 0, ' chooseInventory'+num, '')}">
+                                                                        <!--  <td style="width: 15%;">{!inv.inventory.Warehouse_Name__r.name}, {!inv.shipLineItem.empty} , {!inv.shipLineItem}</td> -->
+                                                                        <td style="width: 15%;">{!inv.inventory.Warehouse_Name__r.name}</td>
+                                                                        <td style="width: 14%;">{!inv.inventory.Quantity__c}</td>
+                                                                        <td style="width: 17%;" class="inventoryDeliveryCompanyName" >{!inv.inventory.Delivery_Company_Name__c}</td>
+                                                                       
+                                                                        <!-- <apex:outputPanel rendered="{!inv.allItemsAsStack == true && inv.shipLineItem != null}"> -->
+                                                                        <td class="table-fld-img " valign="center" style="width:5%;" ><span class="{!IF( inv.allItemsAsStack == true, 'circleChild', 'halfcircleChild')} {! If( inv.shipLineItem != null && inv.shipLineItem.size != 0, 'element-show','element-hide')}"  onclick="showhide('black{!numi}');"></span></td>
+                                                                        <!-- </apex:outputPanel> -->
+                                                                        <!-- <apex:outputPanel rendered="{!inv.allItemsAsStack == false && inv.shipLineItem != null}"> -->
+                                                                        <!-- <td class="table-fld-img {! If( AND(inv.allItemsAsStack  == false, inv.shipLineItem != null), 'element-show','element-hide')}" valign="center" style="width:8%;"><span class="halfcircleChild" onclick="showhide('black{!numi}');"></span></td> -->
+                                                                        <!-- </apex:outputPanel>                                                                                  -->
+                                                                        
+                                                                       
+                                                                        <td class="table-fld-img" valign="center" style="width: 20%;">
+                                                                            
+                                                                            <apex:commandButton id="d" value="Take From Inventory" action="{!sendInventory}" styleClass="closeButton" rerender="inventoryPanelId,selmanufacturePanelId,abc"  rendered="{!if(inv.inventory.RecordType.Name == 'Own Inventory',true,false)}">
+                                                                                <apex:param name="itemrem" value="{!item.SoItem.id}" assignTo="{!soItem1Id}"/>
+                                                                                <apex:param name="invrem" value="{!inv.inventory.id}" assignTo="{!inventoryId}"/>
+                                                                            </apex:commandButton>
+                                                                            
+                                                                            <apex:commandButton id="takeFromInventory" style="background-color: yellow !important;" value="Take From Inventory" action="{!sendInventory}" styleClass="closeButton" rerender="selectedtablePanel,scriptPanelId,displayInventoryShipmentItemsScriptPanel" rendered="{!if(inv.inventory != null && inv.inventory.RecordType.Name == 'Delivery Company Inventory',true,false)}">
+                                                                                <apex:param name="itemrem" value="{!item.SoItem.id}" assignTo="{!soItem1Id}"/>
+                                                                                <apex:param name="invrem" value="{!inv.inventory.id}" assignTo="{!inventoryId}"/>
+                                                                            </apex:commandButton>
+                                                                        </td>
+                                                                        
+                                                                    </tr>
+                                                                    <tr class="black{!numi} element-hide inventory-select-table-header subchooseInventory{!num}">
+        
+                                                                        <td style="width: 7%; "><b>In Stock</b></td>
+                                                                        <td style="width: 15%;">Product Name</td>
+                                                                        <td style="width: 5%;">Quantity</td>
+                                                                        <td style="width: 13%;">Shipment Product Name</td>
+                                                                        <td style="width: 13%;">Shipment Product SKU</td>                                             
+                                                                
+                                                                        <td style="width: 10%;">Magento order number</td>
+                                                                        <td style="width: 10%;">Item Condition</td> 
+                                                                        <td style="width: 15%;">Shipment Item Status</td>
+                                                                    </tr>
+                                                                    <apex:repeat value="{!inv.shipLineItem}" var="ship">
+                                                                        <tr class="black{!numi}white element-hide subchooseInventory{!num}">
+                                                                            <apex:outputPanel style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c != 'Hold As Stock' &&  ship.Shipment_Item_Status__c != 'Enroute - Pending Hold As Stock' }">
+                                                                                <td style="width: 7%;">&#10006;</td>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c == 'Hold As Stock' || ship.Shipment_Item_Status__c == 'Enroute - Pending Hold As Stock'}">
+                                                                                <td style="width: 7%;">&#10004;</td>
+                                                                            </apex:outputPanel>                                                                         
+                                                                            <td style="width: 15%;">{!ship.Product_Name__c}</td>
+                                                                            <td style="width: 5%;">{!ship.Quantity__c}</td>  
+                                                                            <td style="width: 13%;">{!ship.Shipment_Product_Name__c}</td>
+                                                                            <td style="width: 13%;">{!ship.Shipment_Product_SKU__c}</td> 
+                                                                            <td style="width: 10%;">
+                                                                                <apex:outputLink value="/{!ship.Shipment__r.Related_Sales_Order__r.Id}" target="_blank">
+                                                                                    {!ship.Shipment__r.Related_Sales_Order__r.Magento_order_No__c}
+                                                                                </apex:outputLink>
+                                                                            </td>
+                                                                            <td style="width: 10%;">{!ship.Furniture_Condition__c}</td>    
+                                                                            <td style="width: 15%;">{!ship.Shipment_Item_Status__c}</td>
+                                                                            
+                                                                        </tr>
+                                                                        
+                                                                    </apex:repeat> 
+                                                                     <!-- <apex:outputPanel id="InventorySubChildPanel" >
+                                                                        <c:InventoryAvailabilityTableComponent 
+                                                                            shipmentLineItemList="{!inv.shipLineItem}" 
+                                                                            classHeaderName="black{!numi}"
+                                                                            classBodyName="white"
+                                                                        </c:InventoryAvailabilityTableComponent> 
+                                                                    </apex:outputPanel> -->
+                                                                    
+                                                                    <apex:variable var="numi" value="{!VALUE(numi) + 1}"/>
+                                                                    
+                                                                </apex:repeat>
+                                                            
+                                                    </tr>
+                                                        <tr class="black_P{!num} element-hide inventory-select-table-header">
+            
+                                                            <td style="width: 7%; "><b>In Stock</b></td>
+                                                            <td style="width: 15%;">Product Name</td>
+                                                            <td style="width: 5%;">Quantity</td>
+                                                            <td style="width: 13%;">Shipment Product Name</td>
+                                                            <td style="width: 13%;">Shipment Product SKU</td>                                             
+                                                    
+                                                            <td style="width: 10%;">Magento order number</td>
+                                                            <td style="width: 10%;">Item Condition</td> 
+                                                            <td style="width: 15%;">Shipment Item Status</td>
+                                                        </tr>
+                                                        <apex:repeat value="{!item.iw.shipLineItem}" var="ship">
+                                                            <tr class="black_P{!num}white element-hide">
+                                                                <apex:outputPanel style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c != 'Hold As Stock' && ship.Shipment_Item_Status__c != 'Enroute - Pending Hold As Stock' }">
+                                                                    <td style="width: 7%;">&#10006;</td>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel style="height:0px;" layout="none" rendered="{!ship.Shipment_Item_Status__c == 'Hold As Stock' || ship.Shipment_Item_Status__c == 'Enroute - Pending Hold As Stock'}">
+                                                                    <td style="width: 7%;">&#10004;</td>
+                                                                </apex:outputPanel>                                                                         
+                                                                <td style="width: 15%;">{!ship.Product_Name__c}</td>
+                                                                <td style="width: 5%;">{!ship.Quantity__c}</td>  
+                                                                <td style="width: 13%;">{!ship.Shipment_Product_Name__c}</td>
+                                                                <td style="width: 13%;">{!ship.Shipment_Product_SKU__c}</td> 
+                                                                <td style="width: 10%;">
+                                                                    <apex:outputLink value="/{!ship.Shipment__r.Related_Sales_Order__r.Id}" target="_blank">
+                                                                        {!ship.Shipment__r.Related_Sales_Order__r.Magento_order_No__c}
+                                                                    </apex:outputLink>
+                                                                </td>
+                                                                <td style="width: 10%;">{!ship.Furniture_Condition__c}</td>    
+                                                                <td style="width: 15%;">{!ship.Shipment_Item_Status__c}</td>
+                                                                
+                                                            </tr>
+                                                            
+                                                        </apex:repeat> 
+                                                            <!-- <c:InventoryAvailabilityTableComponent 
+                                                                shipmentLineItemList="{!item.iw.shipLineItem}"
+                                                                classHeaderName="black_P{!num}"
+                                                                classBodyName="white"     
+                                                            >
+                                                            
+                                                                </c:InventoryAvailabilityTableComponent> -->
+                                                       
+                                                    <tr>
+                                                    </tr>
+                                                    <apex:variable var="num" value="{!VALUE(num) + 1}"/> 
+                                                    <!-- </apex:repeat> -->
+                                                </apex:repeat> 
+                                            </tbody>
+                                        </table>
+                                        <!-- <table class="pop">
+</table> -->
+                                    </apex:outputpanel>
+                                    
+                                    <apex:outputpanel id="inventoryPanelId">
+                                        <!--  <apex:outputpanel rendered="{!if(soInvRelatedList.size != 0,true,false)}" >                                                                   -->
+                                        <div class="panel-heading" style="background: #E2DFD7;">
+                                            <h4 style="margin-left: 534px;font-size:15px;">
+                                                Inventory Items 
+                                            </h4>
+                                        </div>
+                                        <table width="100%" class="table table-fixed table-fixed2">
+                                            <thead>
+                                                <tr>
+                                                    <th class="table-fld" style="width: 16%;">Product</th>
+                                                    <th class="table-fld-img" style="width: 13%;">Product SKU</th>
+                                                    <th class="table-fld-img">Image</th>
+                                                    <th class="table-fld-img">Bundled</th>
+                                                    <th class="table-fld-img" style="width: 10%;"><label title="Quantity Ordered from Sales Order">Qty Ordered</label></th>
+                                                    <th class="table-fld-img" style="width: 10%;">Inventory Qty</th>
+                                                    <th class="table-fld-img" style="width: 13%;">Warehouse</th>
+                                                    <th class="table-fld-img"><label title="Weight in pounds">Weight</label></th>
+                                                </tr>       
+                                            </thead>
+                                            <tbody>
+                                                <apex:repeat value="{!soInvRelatedList}" var="item">
+                                                    <tr>  
+                                                        <td class="table-fld" style="float:left;width: 16%;"> <b> {!item.SoItem1.Product_Name__c}</b></td> 
+                                                        <td class="table-fld-img" valign="center" style="width: 13%;"><b>SKU : </b>{!item.SoItem1.ProductSKU__c}</td>
+                                                        <td class="table-fld-img" valign="center"><img src="{!item.SoItem1.ProductImageUrl__c}" width="70px" height="45px"/></td>
+                                                        <td class="table-fld-img" valign="center">
+                                                            <apex:inputCheckbox value="{!isBundeled}" disabled="true" rendered="{!if(item.SoItem1.Bundle_Item__c != Null,true,false)}"/>
+                                                            <apex:inputCheckbox disabled="true" rendered="{!!if(item.SoItem1.Bundle_Item__c != Null,true,false)}"/>
+                                                        </td>
+                                                        <td class="table-fld-img" valign="center" style="width: 10%;">
+                                                            <apex:inputText value="{!item.Quantity}" size="5" ></apex:inputText>
+                                                        </td> 
+                                                        <td class="table-fld-img" valign="center" style="width: 10%;">{!item.inventoryQty}</td>
+                                                        <td class="table-fld-fld" valign="center" style="width: 13%;"> {!item.inventoryWarehouseName} <br/>
+                                                            <apex:commandbutton value="Send By Manufaturer" action="{!sendManufacturer}" status="message" oncomplete="changeButtonColor();" rerender="inventoryPanelId,manufacturerpanelId,scriptPanelId,selectedtablePanel,weightId,suggestedTruckingId"> 
+                                                                <apex:param name="itemrem" value="{!item.SoItem1.id}" assignTo="{!soItem1Id}"/> 
+                                                            </apex:commandbutton>
+                                                        </td>
+                                                        <td class="table-fld-img" valign="center"> {!item.weight} lb </td>
+                                                    </tr>
+                                                </apex:repeat> 
+                                            </tbody>
+                                        </table>
+                                    </apex:outputpanel>
+                                    <!--    </apex:outputpanel> -->
+                                </apex:outputPanel>
+                            </div><br/>
+                            <!-- Sales Order Line Item table -->
+                            <!-- Customer Information-->
+                            <apex:outputPanel id="customerInformationPanel">
+                                <fieldset class="fieldset1" style="margin-bottom:10px">
+                                    <legend class="legend-add-label">Customer Information</legend>
+                                    <div style="width:50%;float:left;">
+                                        <div class="field-rows" style="padding: 5px 0px;width:100%">
+                                            <label class="inv-bill-add-label"><b>Customer Name : </b></label>
+                                            <span style="display: table;"><apex:outputField value="{!SO_Obj.Customer_Name__r.name}"></apex:outputField></span>
+                                        </div>
+                                    </div>
+                                    <div style="width:100%;float:left;padding: 13px 0px;">
+                                        <div class="field-rows" style="width:50%;float:left;">
+                                            <label class="inv-bill-add-label"><b>Billing Address : </b></label>
+                                            <!--apex:outputField value="{!SO_Obj.Billing_Address__c}"></apex:outputField-->
+                                            <div style="width:50%;float:left;">
+                                                <apex:outputText value="{!SO_Obj.Bill_To__c}{!if(SO_Obj.Bill_To__c!=null,', ','')} <br/>
+                                                                        {!SO_Obj.Billing_Street__c}{!if(SO_Obj.Billing_Street__c!=null,', ','')} <br/> 
+                                                                        {!SO_Obj.Billing_City__c}{!if(SO_Obj.Billing_City__c!=null,', ','')} 
+                                                                        {!SO_Obj.Billing_State__c}&nbsp; {!SO_Obj.Billing_ZipCode__c} <br/>
+                                                                        {!SO_Obj.Billing_Phone__c} <br/>
+                                                                        {!SO_Obj.Mobile__c}" escape="false">
+                                                </apex:outputText>
+                                            </div>
+                                        </div>
+                                        <div class="field-rows" style="width:50%;float:left;">
+                                            <label class="inv-bill-add-label"><b>Shipping Address : </b></label>
+                                            <div style="width:50%;float:left;">
+                                                <apex:outputText value="{!SO_Obj.Ship_to__c}{!if(SO_Obj.Ship_to__c!=null,', ','')} <br/>
+                                                                        {!SO_Obj.Shipping_Street__c}{!if(SO_Obj.Shipping_Street__c!=null,', ','')}<br/> 
+                                                                        {!SO_Obj.Shipping_City__c} {!if(SO_Obj.Shipping_City__c!=null,', ','')}  
+                                                                        {!SO_Obj.Shipping_State__c} &nbsp; {!SO_Obj.Shipping_ZipCode__c} <br/>
+                                                                        {!SO_Obj.Shipping_Phone__c} <br/>
+                                                                        {!SO_Obj.Shipping_Mobile__c}" escape="false">
+                                                </apex:outputText>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                </fieldset>
+                            </apex:outputPanel><br/><br/>
+                            <!-- end of Customer Information-->
+                            <apex:outputPanel id="manufacturerpanelId">
+                                <!--apex:outputPanel rendered="{!if(selectedOrderwrapper.size != 0,true,false)}"-->
+                                <apex:outputPanel >
+                                    <apex:outputText id="manufacturerId" style="font-size:16px;" value="<b>Note: </b>The below section refers to Manufacturer only." escape="false" rendered="{!if(soInvRelatedList.size != 0,true,false)}"></apex:outputText>
+                                    <apex:pageMessages id="ErrorId"></apex:pageMessages>
+                                    <fieldset class="fieldset1">
+                                        <legend class="legend-add-label"><apex:outputText value="{!manufacturerName}" style="color: Red;margin-right:4px;" ></apex:outputText>: Purchase Order Header Information</legend>
+                                        <apex:outputPanel id="Panel1">
+                                            <div class="field-rows" style="float:left">
+                                                <label class="inv-bill-add-label"><b>Manufacturer Multiple Location : </b></label>
+                                                <apex:inputCheckbox value="{!haveMultipleLocation}" disabled="true"/>
+                                            </div>
+                                            <apex:outputPanel id="locations" rendered="{!haveMultipleLocation && manufacturerName == 'Liberty'}">
+                                                <div class="field-rows" style="float:left">
+                                                    <label class="inv-bill-add-label"><b>Manufacturer Location :</b></label>
+                                                    <apex:selectList value="{!POFielddisplay.Liberty_Hub__c}" size="1" multiselect="false">
+                                                        <apex:selectOptions value="{!selectLocations}"/>
+                                                    </apex:selectList>
+                                                </div>
+                                            </apex:outputPanel><br/><br/><br/>
+                                            
+                                            <div style="width:100%;float:left;">
+                                                <apex:outputPanel id="DeliveryPanel">
+                                                    <div class="field-rows">
+                                                        <label class="inv-bill-add-label"><b>Suggested Delivery Company : </b></label>
+                                                        <!--apex:outputText value="{!SO_Obj.Delivery_Company__r.Name}" style="margin-left: 20px;" ></apex:outputText-->
+                                                        <apex:outputText value="[ Direct Shipping ]" style="color:black;" rendered="{!if(isDirectShipping == true && Carrier != 'White Glove',true,false)}" ></apex:outputText>
+                                                        <apex:outputText value="[ Ship to Hub ]" style="color:black;" rendered="{!If(isShiptoHub == true && (Carrier == 'FedEx' || Carrier == 'LTL'),true,false)}" ></apex:outputText>
+                                                        <apex:inputText rendered="{!if((((isDirectShipping != true && isShiptoHub != true) && Carrier != 'none') && ((isDirectShipping != true && isShiptoHub != true) && Carrier != 'White Glove')),true,false)}" disabled="true"/>                                   
+                                                        <apex:inputField id="deliveryFieldId" value="{!SO_Obj.Delivery_Company__c}" onchange="changeButtonColor();" style="{!styleVar}" rendered="{!if((isDirectShipping != true && Carrier == 'White Glove') || (isShiptoHub == true && (Carrier == 'none' || Carrier == 'White Glove')) || (((isDirectShipping != true && isShiptoHub != true) && Carrier == 'none') || ((isDirectShipping != true && isShiptoHub != true) && Carrier == 'White Glove') || Carrier == 'White Glove'),true,false)}">
+                                                            <apex:actionSupport status="message" event="onselect" reRender="DeliveryPanel" oncomplete="changeButtonColor();">
+                                                            </apex:actionSupport>
+                                                        </apex:inputField>
+                                                        <!--apex:actionFunction name="getTruckingcompany" action="{!ondeliveryChange}" reRender="formId,truckingId,truckingnoteId" status="message" /-->
+                                                    </div>
+                                                </apex:outputPanel>
+                                                <div class="field-rows">
+                                                    <label class="inv-bill-add-label"><b>Suggested Trucking Company : </b></label>
+                                                    <!--apex:outputText value="{!SO_Obj.Delivery_Company__r.Name}" style="margin-left: 20px;" ></apex:outputText-->
+                                                    <apex:outputText value="[ Direct Shipping ]" style="color:black;" rendered="{!if(isDirectShipping == true && Carrier != 'White Glove',true,false)}" ></apex:outputText>
+                                                    <apex:outputText value="[ Ship to Hub ]" style="color:black;" rendered="{!if(isShiptoHub == true && Carrier != 'White Glove',true,false)}" ></apex:outputText>
+                                                    <apex:inputText rendered="{!if((((isDirectShipping != true && isShiptoHub != true) && Carrier != 'none') && ((isDirectShipping != true && isShiptoHub != true) && Carrier != 'White Glove')),true,false)}" disabled="true"/>
+                                                    <apex:inputField id="suggestedTruckingId" value="{!POFielddisplay.Suggested_Trucking__c}" style="text-align:left;" rendered="{!if((((isDirectShipping != true && isShiptoHub != true) && Carrier == 'none') || Carrier == 'White Glove'),true,false)}">
+                                                        <apex:actionSupport status="message" event="onselect" reRender="selectedtablePanel,selmanufacturePanelId,ErrorId,Panel1,ErrorId3" action="{!onTruckingChange}"/>
+                                                    </apex:inputField>
+                                                    <!--br/><apex:outputText value="Error: You must enter a value" style="color:#d74c3b;margin-left:184px;" rendered="{!isreqField}"/-->
+                                                    <br/><br/>
+                                                </div>
+                                            </div>
+                                            <div style="width:100%;float:left;margin-bottom: 16px;">
+                                                <div class="field-rows">
+                                                    <apex:outputPanel rendered="{!if(isDirectShipping == true,true,false)}">
+                                                        <label class="inv-bill-add-label"><b>Customer Location : </b></label>
+                                                        <apex:outputText escape="false" value="{!SO_Obj.Shipping_Address__c}" style="display: inline-block;"></apex:outputText>
+                                                        
+                                                    </apex:outputPanel>
+                                                </div>
+                                                <div class="field-rows" style="float:right">
+                                                    <label class="inv-bill-add-label"><b>Total Weight : </b></label>
+                                                    <apex:OutputText id="weightId" value="{!totalWeight} lb"/>
+                                                </div>
+                                            </div>
+                                            
+                                            <div style="width:100%;float:left;">
+                                                <apex:outputPanel rendered="{!if(isDirectShipping != true,true,false)}">
+                                                    <div class="field-rows">
+                                                        <label class="inv-bill-add-label"><b>Top 3 Nearest Delivery Companies : </b></label>
+                                                        <apex:inputTextarea value="{!SO_Obj.Delivery_Companies_Distance__c}" style="width: 321px;height: 100px;margin-left:0px;resize:none;" readonly="true" styleClass="manualorder-textarea"></apex:inputTextarea>
+                                                    </div>
+                                                    <apex:outputPanel rendered="{!if(((isDirectShipping != true && isShiptoHub != true) && Carrier == 'none'),true,false)}">
+                                                        <div class="field-rows">
+                                                            <label class="inv-bill-add-label"><b>Trucking Note : </b></label>
+                                                            <apex:inputTextarea id="truckingnoteId" value="{!truckingNote}" styleClass="manualorder-textarea" style="margin-left:0px;width: 250px;height: 100px;resize:none;" readonly="true"/>
+                                                            <!---apex:outputText id="truckingnoteId" value="{!truckingNote}" ></apex:outputText-->
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </div>
+                                            
+                                            
+                                            <div style="width:100%;float:left;margin-bottom: 16px;">
+                                                <div class="field-rows">
+                                                    <label class="inv-bill-add-label"><b>Do not notify manufacturer : </b></label>
+                                                    <apex:inputCheckbox value="{!doNotUpdateManufacturer}" style="display: inline-block;"></apex:inputCheckbox>
+                                                </div>
+                                            </div>
+
+                                            <div style="width:100%;float:left;padding-top: 10px;padding-bottom: 10px;">
+                                                <apex:outputPanel id="carrierInfoPanel" rendered="{!if( Carrier != 'none', true, false)}">	
+                                                    <div class="field-rows">    
+                                                        <label class="inv-bill-add-label" style="padding: 5px 0px;"><b>Carrier Info : </b></label>
+                                                        <apex:inputTextarea value="{!POFielddisplay.Carrier_Info__c}" rows="3" style="width: 321px;margin-left:0px;resize:none;"/>
+                                                    </div>
+                                                </apex:outputPanel>
+
+                                                <div class="field-rows" style="float:right">
+                                                    <label class="inv-bill-add-label" style="padding: 5px 0px;"><b>Carrier : </b></label>
+                                                    <apex:selectList value="{!Carrier}" size="1" multiselect="false" onchange="carrierDetail();">
+                                                        <apex:selectOptions value="{!selectCarrieroption}"/>
+                                                    </apex:selectList>
+                                                    <apex:actionFunction name="carrierDetail" action="{!onCarrierchange}" rerender="messageId,Panel1,communicationpannelId,carrierInfoPanel" status="message"/>
+                                                </div>
+                                            </div>
+                                            <br/><br/>
+                                            
+                                        </apex:outputPanel>
+                                    </fieldset> <br/><br/>
+                                    
+                                    <apex:outputPanel rendered="{!if(isDirectShipping != true,true,false)}">
+                                        <fieldset class="fieldset1">
+                                            <legend class="legend-add-label">Google Maps</legend>
+                                            <div>
+                                                <apex:iframe src="{!iframeSource}"  height="350px" width="100%" scrolling="true" id="theIframe"/>
+                                            </div>
+                                        </fieldset> <br/><br/>
+                                    </apex:outputPanel>
+                                    
+                                    <apex:outputPanel id="communicationpannelId">
+                                        <fieldset class="fieldset1" style=" margin-bottom: 50px;height:150px;">
+                                            <legend class="legend-add-label">Order Communication Details</legend>
+                                            <div class="field-rows">
+                                                <label class="inv-bill-add-label"><b>Order Communication Type : </b></label>
+                                                <apex:OutputText value="{!orderCommunicationType}"/>
+                                            </div>
+                                            <apex:outputPanel >
+                                                <div class="field-rows">
+                                                    <label class="inv-bill-add-label"><b>Acknowledgement Number : </b></label>
+                                                    <apex:OutputText id="trackingnumberId" value="{!trackingnumberId}"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                            <br/>
+                                            
+                                            <apex:outputPanel id="websitePanel" rendered="{!if(orderCommunicationType == 'Website(SSO)',true,false)}" >
+                                                <div class="field-rows" style="margin-top:15px;">
+                                                    <label class="inv-bill-add-label"> <b>Website : </b> </label>
+                                                    <apex:commandLink value="{!manufacturerName}" onclick="window.open('{!websiteURL}', '_blank');" reRender="websitePanel" />
+                                                    <!--apex:OutputText value="{!websiteURL}" FormId/-->
+                                                </div>
+                                            </apex:outputPanel>
+                                            <apex:actionFunction name="clearAutocompleteList" reRender="autoCompletePanel, backdropPanel"/>
+                                            <apex:outputPanel styleClass="{! 'backdrop-wrap ' + if(matchAutoCompleteList.size > 0,'dropdown-opened','')}" id="backdropPanel">
+                                                <div class="{! 'backdrop ' + if(matchAutoCompleteList.size > 0,'','hidden')}" onclick="clearAutocomplete(event)"></div>
+                                            </apex:outputPanel>
+                                            <div class="{! 'field-rows ' + if(matchAutoCompleteList.size > 0,'opened-dropdown','')}" style="margin-top:15px;">
+                                                <label class="inv-bill-add-label"><b>Notes : </b> </label>
+                                                <div class="{! 'dropdown-wrap ' + if(matchAutoCompleteList.size > 0,'opened','')}">
+                                                    <apex:outputPanel id="notesPanel" >
+                                                        <apex:actionFunction name="autoComplite" action="{!notesAutocomplete}" reRender="autoCompletePanel, backdropPanel"/>
+                                                        <apex:inputTextarea rows="3" 
+                                                                            style="width: 250px;height: 50px;margin-left:0px;resize:none;"  
+                                                                            value="{!POFielddisplay.Notes__c}"
+                                                                            id="notes-textarea"
+                                                                            onkeyup="autoComplite()"
+                                                                            styleClass="notes-textarea manualorder-textarea"/>
+                                                        
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="autoCompletePanel">
+                                                        <div class="{! 'dropdown ' + if(matchAutoCompleteList.size > 0,'','hidden')}">
+                                                            <ul class="listbox">
+                                                                <apex:repeat value="{!matchAutoCompleteList}" var="item">
+                                                                    <li class="list-item" onclick="updateNotesValue('{!item}')">
+                                                                        <span>{!item}</span>
+                                                                    </li>
+                                                                </apex:repeat>
+                                                            </ul>
+                                                        </div>
+                                                        
+                                                    </apex:outputPanel>
+                                                </div>
+                                                
+                                            </div>
+                                            <apex:outputPanel >
+                                                <div class="field-rows">
+                                                    <label class="inv-bill-add-label"><b>Requested Arrival Date : </b></label>
+                                                    <apex:inputField value="{!POFielddisplay.Requested_delivery_date__c}"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                        </fieldset>
+                                        <apex:outputPanel id="ETAPanelId" rendered="{!if(stockAvailable == true,true,false)}" >
+                                            <apex:pageMessages id="ETAinfoId"></apex:pageMessages>
+                                            <fieldset class="fieldset1" style="margin-bottom: 10px;">
+                                                <legend class="legend-add-label">Estimated Time of Arrival</legend>
+                                                <div class="field-rows">
+                                                    <label class="inv-bill-add-label"><b>Sales Order ETA : </b> </label>
+                                                    <apex:OutputText value="{!SO_Obj.Order_ETA__c}"/>
+                                                </div>
+                                                <apex:outputPanel >
+                                                    <div class="field-rows">
+                                                        <label class="inv-bill-add-label"><b>Load Date(Expected) : </b> </label>
+                                                        <apex:inputField value="{!POFielddisplay.Load_Date__c}"/>
+                                                    </div>
+                                                    <div class="field-rows" style="float:right;margin-top:15px">
+                                                        <div style="width:100%;float:left;margin-bottom: 17px;">
+                                                            <label class="inv-bill-add-label"><b>Purchase Order ETA : </b></label>
+                                                            
+                                                            <apex:selectList id="etaId" value="{!selectedETA}" style="text-align:left;text-align:-moz-left;{!errorStyle}" onChange="etaDetail(),focusSection();" size="1" multiselect="false" >
+                                                                <apex:selectOptions value="{!selectETAoption}"/>
+                                                            </apex:selectList> 
+                                                            <apex:actionFunction name="etaDetail" action="{!onETAchange}" rerender="communicationpannelId,messageId,ErrorId,ErrorId3,truckingId" status="message"/>
+                                                        </div>
+                                                        <div style="width:100%;float:left">
+                                                            <label class="inv-bill-add-label"><b>Call Customer With ETA : </b></label>
+                                                            <apex:inputcheckbox value="{!POFielddisplay.ETA_Is_Given__c}"/>
+                                                        </div>
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </fieldset>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <apex:pagemessages id="ErrorId3">
+                                    </apex:pagemessages>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                            <div class="create-invoice-btns">
+                                <apex:commandButton value="Submit" id="Submitorderbtn" action="{!submitPO}" styleClass="manstep3-savebtn" style="width: 149px;" rerender="messageId,acknowledgementPopup,ErrorId,communicationpannelId,ETAinfoId,etaId,stockpopup,ErrorId3" status="message" oncomplete="focusSectionError();" onclick="window.onbeforeunload = null;" />
+                                <apex:commandButton value="Cancel" action="/{!Sales_Order__c.id}" styleClass="manstep3-cancelbtn" style="width: 149px;margin-right:20px;"/>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+            </body>
+        </html>
+        
+    </apex:form> 
+</apex:page>

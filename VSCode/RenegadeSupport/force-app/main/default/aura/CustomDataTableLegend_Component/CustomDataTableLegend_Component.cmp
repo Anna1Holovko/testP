@@ -1,0 +1,24 @@
+<aura:component >
+    <aura:attribute type="Boolean" name="isLegendOpen" default="true" ></aura:attribute>
+    
+    
+    <div>
+        <aura:if isTrue="{!v.isLegendOpen}">
+            <div class="overlay" onclick="{!c.closeLegend}"></div>
+            <div class="legend" onclick="{!c.closeLegend}">
+                <table>
+                    <tr>
+                        <th>Item Progress</th>
+                        <th>Icon</th>
+                    </tr>
+                    <tr>
+                        <td>Missing PO</td>
+                        <td>
+                            <img src="{!$Resource.SHL_MissingPO}" class="legend-img" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

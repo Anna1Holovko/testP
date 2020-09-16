@@ -1,0 +1,25 @@
+<apex:component controller="SalesOrderEmailTemplateClass" access="global">
+    <apex:attribute name="recordId" type="Id" description="Id of the SalesOrder" assignTo="{!invoiceId}"/>
+    <apex:repeat var="SOinvoiceLineItem" value="{!invoiceItems}">     
+        <tr>
+            <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family:Tahoma, Arial, sans-serif;font-size:9pt;">{!SOinvoiceLineItem.Items_invoiced__r.ProductSKU__c}</td>
+            
+            <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;">{!SOinvoiceLineItem.Product_Name__c}</td>   
+            <td style="border: 1px solid #ddd !important;padding:8px !important;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;width: 150px !important;height: 100px !important;"><apex:image value="{!SOinvoiceLineItem.Items_invoiced__r.ProductImageUrl__c}" height="100px" width="150px"/></td> 
+            <apex:outputText rendered="{!if(SOinvoiceLineItem.Invoice__r.Recordtype.name == 'Payables',true,false)}" escape="false">
+                <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;">{!FLOOR(SOinvoiceLineItem.Quantity_Refunded__c)}</td>
+            </apex:outputText>
+            <apex:outputText rendered="{!if(SOinvoiceLineItem.Invoice__r.Recordtype.name == 'Receivables',true,false)}" escape="false">
+                <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;">{!FLOOR(SOinvoiceLineItem.Quantity_Invoiced__c)}</td>
+            </apex:outputText>
+            <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;"><apex:outputText value="{0, number, $#,###,###,###,##0.00}"><apex:param value="{!SOinvoiceLineItem.Unit_Price__c}" /></apex:outputText></td>
+            <apex:outputText rendered="{!if(SOinvoiceLineItem.Invoice__r.Discount_Amount__c != 0.00,true,false)}" escape="false">
+                <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;"><apex:outputText value="{!SOinvoiceLineItem.Discount_Amount__c}"/></td>
+            </apex:outputText>
+            <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;"><apex:outputText value="{0, number, $#,###,###,###,##0.00}"><apex:param value="{!SOinvoiceLineItem.Sub_Total_Hidden__c}" /></apex:outputText></td>
+            <apex:outputText rendered="{!if(SOinvoiceLineItem.Invoice__r.Reason_for_Refund__c == 'Compensation',true,false)}" escape="false">
+                <td style="border: 1px solid #ddd;padding:8px;text-align: center;font-family: Tahoma, Arial, sans-serif;font-size:9pt;"><apex:outputText value="{0, number, $#,###,###,###,##0.00}"><apex:param value="{!SOinvoiceLineItem.Custom_Refund__c}" /></apex:outputText></td>
+            </apex:outputText>
+        </tr>      
+    </apex:repeat>   
+</apex:component>

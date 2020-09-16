@@ -1,0 +1,43 @@
+<apex:page standardController="Sales_Order__c" docType="html-5.0"
+           extensions="BulkPOcreationCntr"
+           recordSetVar="PurchaseOrders"
+           lightningStylesheets="true">
+    <apex:form >
+        <apex:pageMessages />
+        <apex:pageBlock >
+            
+            <apex:pageBlockButtons location="bottom">
+                <apex:outputPanel id="button" rendered="{!!areYouSure}">
+                    <apex:commandButton action="{!userConfirmation}" value="Submit" disabled="{!!isRenderOption}"/>
+                </apex:outputPanel>
+                <apex:outputPanel id="button2" rendered="{!areYouSure}">
+                    <apex:commandButton action="{!checkAndUpdate}" value="Submit"/>
+                </apex:outputPanel>
+                <apex:commandButton value="Back" action="{!cancel}" immediate="true"/>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockSection columns="1" rendered="{! isRenderOption }">
+                <apex:selectList value="{!selectedCarrier}" size="1" required="true" label="{!$ObjectType.Sales_Order__c.Fields.Carrier__c.Label}" rendered="{!showCarrierField}">
+                    <apex:selectOptions value="{!CarrierOption}"/>
+                </apex:selectList>
+                <apex:input type="date" label="{!$ObjectType.Sales_Order__c.Fields.Requested_Arrival_Date__c.Label}" value="{!selectedArrivalDate}" required="true"/>
+            </apex:pageBlockSection>
+            <div rendered="{! isRenderOption}">
+                <apex:outputPanel rendered="{!areYouSure }" id="confirm" >
+                    <div style="color:red;">
+                        {!$Label.Are_you_sure_To_continue_click_Submit}
+                    </div>
+                </apex:outputPanel>
+            </div>
+            
+            <apex:outputPanel rendered="{!isRenderRes}">
+                <div style="margin:10px;">
+                    <span style="color:red; font-size:16px;"> {!message}</span> 
+                </div>
+                <div style="margin:10px;">
+                    <span>{!salesOrders}</span>
+                </div>
+            </apex:outputPanel>
+        </apex:pageBlock>
+    </apex:form>   
+</apex:page>

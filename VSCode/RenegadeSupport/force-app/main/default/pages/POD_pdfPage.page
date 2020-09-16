@@ -1,0 +1,385 @@
+<apex:page showHeader="false" sidebar="false" applyBodyTag="false" applyHtmlTag="false" renderAs="pdf" standardStylesheets="false"  controller="POD_PDFController">
+    <html>
+        <head>
+            <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css?family=Poppins:400" rel="stylesheet" /> <!-- ALTERNATIVE TO INTRO -->
+            <style>
+                html,body {font-family: 'Nunito Sans', sans-serif; margin: 0; padding: 0;}
+                p,span,div,h1,h2,h3,li,label,textarea{font-family: inherit;}
+                p {
+                margin: 0;
+                }
+                
+                
+                
+                .page {
+                page-break-inside: avoid;
+                page-break-before: auto;
+                }
+                
+                .page:first-child {
+                page-break-before: avoid;
+                }
+                
+                
+                @page {
+                size: A4;
+                margin: 84px 0 150px 0;
+                
+                @top-left {
+                content: element(header);
+                }
+                @bottom-left {
+                content: element(footer);
+                }
+                }
+                .header {
+                width: 20cm;
+                position: running(header);
+                background: #1b6775;
+                vertical-align: middle;
+                padding: 15px 30px 10px;
+                }
+                .header-title {
+                display: inline-block;
+                font-family: 'Poppins', sans-serif;
+                text-transform: uppercase;
+                color: #fff;
+                vertical-align: middle;
+                letter-spacing: 2px;
+                font-size: 23.5px;
+                margin: 0 0 0 20px;
+                }
+                .header img {
+                display: inline-block;
+                height: 58px;
+                vertical-align: middle;
+                }
+                .footer {
+                height:80px;
+                width: 22cm;
+                position: running(footer);
+                /* background-color: #e0e0e0; */
+                text-align: center;
+                padding: 10px 0 10px;
+                margin-bottom: 30px;
+                font-size: 15.5px;
+                font-style: italic;
+                color: #231d1c;
+                }
+                
+                .main {
+                width: 570px;
+                margin: 0 auto;
+                padding: 10px 0;
+                }
+                .main table {
+                width: 100%;
+                border-collapse: collapse;
+                }
+                .main table td {
+                font-size: 12.5px;
+                color: #000000;
+                vertical-align: middle;
+                }
+                .main table td p {
+                padding: 5px 8px;
+                }
+                
+                .main table td.label {
+                padding-top: 10px;
+                font-size: 14.5px;
+                }
+                .main-table td.bordered {
+                border: solid 1px #e0e0e0;
+                }
+                .main-table td p span {
+                display: block;
+                line-height: 1.7;
+                }
+                .items-table td {
+                vertical-align: top;
+                }
+                .main .items-table td p {
+                padding: 1px;
+                font-size: 12px;
+                }
+                .items-table td.bordered p span {
+                line-height: 1.1;
+                }
+                .items-table .on-bg {
+                width: 180px;
+                padding: 0 4px;
+                /*background-color: #EBEBEB !important;*/
+                }
+                .items-table .checkbox {
+                display: block;
+                margin: 4px;
+                width: 15px;
+                height: 15px;
+                border: 1px solid #EBEBEB;
+                }
+                .main .time-table td p {
+                font-style: italic;
+                font-size: 14.5px;
+                padding: 5px 0;
+                }
+                .disclaimer {
+                    padding-top: 15px; 
+                    float: right;
+                    text-align: justify;
+                    width: 250px;
+                    font-size: 12px;
+                }   
+                .signature-table {
+                    border-collapse: collapse;
+                    margin-top: 100px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <img src="{! '/servlet/servlet.ImageServer?id=' + logoId +'&oid=' + orgId}"/><!-- 0150U0000009KfO -->
+                <h1 class="header-title">
+                    Renegade Furniture Group - Proof of delivery
+                </h1>
+            </div>
+            <div class="footer">
+                <p>
+                    Please contact the Renegade driver hotline at 516-208-1229 during delivery to report all issues.
+                </p>
+            </div>
+            <div class="page">
+                
+                <div class="main">
+                    <table class="main-table">
+                        <tr>
+                            <td class="label">
+                                Order Number
+                            </td>
+                            <td style="width: 30px;">
+                            </td>
+                            <td class="label">
+                                Date
+                            </td>
+                            <!-- <td class="label">
+                                Time Frame
+                            </td> -->
+                        </tr>
+                        <tr>
+                            <td class="bordered">
+                                <p>
+                                    {!salesOrder.Magento_order_No__c}
+                                </p>
+                            </td>
+                            <td style="width: 30px;">
+                            </td>
+                            <td class="bordered" style="width: 270px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td>
+                            <!-- <td class="bordered" style="width: 120px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td> -->
+                        </tr>
+                        
+                        <tr>
+                            <td class="label">
+                                Delivery Agent
+                            </td>
+                            <td style="width: 30px;">
+                            </td>
+                            <td class="label" colspan="2">
+                                Ship to
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="bordered">
+                                <p>
+                                    <span>{!salesOrder.Shipments__r[0].Delivery_Company__r.name} {!if(salesOrder.Shipments__r[0].Delivery_Company__r.name!=null,', ','')}&nbsp;</span>
+                                    <span>{!salesOrder.Shipments__r[0].Delivery_Company__r.ShippingStreet}{!if(salesOrder.Shipments__r[0].Delivery_Company__r.ShippingStreet!=null,', ','')}&nbsp;</span>
+                                    <span>{!salesOrder.Shipments__r[0].Delivery_Company__r.ShippingCity}{!if(salesOrder.Shipments__r[0].Delivery_Company__r.ShippingCity!=null,', ','')} &nbsp; {!salesOrder.Shipments__r[0].Delivery_Company__r.ShippingPostalcode}&nbsp; {!salesOrder.Shipments__r[0].Delivery_Company__r.ShippingPostalcode}</span>
+                                    <span>{!salesOrder.Shipments__r[0].Delivery_Company__r.Phone} &nbsp;</span>
+                                </p>
+                            </td>
+                            <td style="width: 30px; border: none;">
+                            </td>
+                            <td class="bordered" colspan="2">
+                                <p>
+                                    <span>{!salesOrder.Ship_to__c} {!if(salesOrder.Ship_to__c !=null,', ','')} &nbsp;</span>
+                                    <span>{!salesOrder.Shipping_Street__c} {!if(salesOrder.Shipping_Street__c!=null,', ','')} &nbsp;</span>
+                                    <span>{!salesOrder.Shipping_City__c} {!if(salesOrder.Shipping_City__c!=null,', ','')} {!salesOrder.Shipping_State__c} &nbsp; {!salesOrder.Shipping_ZipCode__c}</span>
+                                    <span> {!salesOrder.Shipping_Phone__c } &nbsp;</span>
+                                    
+                                </p>
+                            </td>
+                        </tr>
+                        <tr><td></td><td></td><td></td></tr> <!-- Don't remove, don't use. Placeholder for styling purposes  <td></td>-->
+                        <tr>
+                            <td class="label" colspan="4">
+                                Items
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td class="bordered" colspan="4" >
+                                <table class="items-table">
+                                    <!-- SINGLE_ITEM -->
+                                    <apex:repeat value="{!shipmentItemList}" var="item_i"> 
+                                        <tr>
+                                            <td style="width: 22px;">
+                                                <span class="checkbox"></span>
+                                            </td>
+                                            <td class="on-bg">
+                                                <p>
+                                                    <!-- {!item_i.Quantity__c}&nbsp; X&nbsp;{!item_i.Product_SKU__c} -->
+                                                    {!item_i.Shipped_Quantity_Actual__c}&nbsp; X&nbsp;{!item_i.Shipment_Product_SKU__c}
+                                                </p>
+                                            </td>
+                                            <td>
+                                                <p>
+                                                    <span>  {!item_i.Shipment_Product_Name__c}</span>
+                                                    <!-- <span>
+                                                        <table>
+                                                            <tr>
+                                                                <td style="width: 38px;">Notes:</td>
+                                                                <td style="border-bottom: 1px solid #000;"></td>
+                                                            </tr>
+                                                        </table>
+                                                    </span> -->
+                                                </p>
+                                            </td>
+                                        </tr>   
+                                    </apex:repeat>
+                                    
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <table class="time-table">
+                        <tr>
+                            <td  class="label" style="border-bottom:1px solid #eee;width: 210px;">
+                                &nbsp;
+                            </td>
+                            <td></td>
+                            <td  class="label" style="border-bottom:1px solid #eee;width: 210px;">
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>
+                                    Start Time
+                                </p>
+                            </td>
+                            <td></td>
+                            <td>
+                                <p>
+                                    End Time
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    &nbsp;
+                    <table>
+                        <tr>
+                            <td style="width: 40px;">Notes:</td>
+                            <td style="border-bottom: 1px solid #000;"></td>
+                        </tr>
+                        <tr><td colspan="2" style="padding: 18px 0 0 0;border-bottom: 1px solid #000;"></td></tr>
+                        <tr><td colspan="2" style="padding: 18px 0 0 0;border-bottom: 1px solid #000;"></td></tr>
+                    </table>
+                    <div class="disclaimer">
+                    I have received all the merchandise from my order and they have been assembled without damage to my property. I have inspected and found the merchandise to be free of damage or defect at the time of delivery unless otherwise noted above
+                    </div>
+                    <table class="time-table signature-table">
+                        <tr>
+                            <td  style="border-bottom:1px solid #eee;width: 180px; padding-top: 20px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td>
+                            <td></td>
+                            <td  style="border-bottom:1px solid #eee;width: 180px; padding-top: 20px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>
+                                    Driver Name (print)
+                                </p>
+                            </td>
+                            <td></td>
+                            <td>
+                                <p>
+                                    Customer Name (print)
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        
+                        <tr>
+                            <td  style="border-bottom:1px solid #eee;width: 180px; padding-top: 20px;">
+                                &nbsp;
+                            </td>
+                            <td></td>
+                            <td  style="border-bottom:1px solid #eee;width: 180px; padding-top: 20px;">
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>
+                                    Driver Signature
+                                </p>
+                            </td>
+                            <td></td>
+                            <td>
+                                <p>
+                                    Customer Signature
+                                </p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td  style="border-bottom:1px solid #eee;width: 180px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td>
+                            <td></td>
+                            <td  style="border-bottom:1px solid #eee;width: 180px;">
+                                <p>
+                                    &nbsp;
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p>
+                                    Date
+                                </p>
+                            </td>
+                            <td></td>
+                            <td>
+                                <p>
+                                    Date
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </body>
+        
+        
+    </html>
+    
+    
+</apex:page>

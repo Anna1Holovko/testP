@@ -1,0 +1,50 @@
+<apex:component controller="SalesOrderEmailTemplateClass" access="global">
+    <apex:attribute name="recordId" type="Id" description="Id of the SalesOrder" assignTo="{!salesOrderId}"/>
+    <apex:repeat var="item" value="{!soRelatedList}"> 
+        <tr>
+            <td  style="text-align: left !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                {!soRelatedList[item].SoItem.ProductSKU__c}
+            </td>
+            <td style="border-bottom:1px solid #ddd !important;text-align: center !important;font-family:'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;font-size:12px !important;height: 100px !important;width: 150px !important;padding:0px !important;" >
+                <apex:image value="{!soRelatedList[item].SoItem.ProductImageUrl__c}" height="80px" width="100px"/>
+            </td>
+            
+            <td  style="font-weight:700 !important;text-align: left !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif!important;" >
+                <apex:outputText value=" {!soRelatedList[item].SoItem.Product_Name__c}"></apex:outputText>
+            </td>        
+            <td  style="text-align:right !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                <apex:outputField value=" {!soRelatedList[item].SoItem.Price__c}" />
+            </td>
+            <td style="text-align:center !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family:'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                <apex:outputField value=" {!soRelatedList[item].SoItem.Quantity__c}" />
+            </td>
+            <td style="text-align:right !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                <apex:outputField value=" {!soRelatedList[item].SoItem.Row_Total__c}" />
+            </td>
+        </tr> 
+        <apex:outputPanel layout="block" styleClass="popup_outputpanel" id="panelid" rendered="{!if(soRelatedList[item].SoItem.Products__r.recordtype.name=='Bundled',true,false)}" >
+            <tr>
+                <apex:repeat value="{!soRelatedList[item].bundleList}" var="bundleItem" rendered="{!if(soRelatedList[item].bundleList != null,true,false)}">
+                    <tr id="Bundel" role="row">
+                        <td style="text-align: left !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif!important;">
+                            <i><apex:outputText value="<b>{!if(bundleItem.Bundle_Item__r.Include__c==true,'Set Includes','Optional Pieces')}</b><br/><br/>" style="color:#4e505e;" escape="false"></apex:outputText> </i>
+                            {!bundleItem.ProductSKU__c}
+                        </td>
+                        <td style="border-bottom:1px solid #ddd !important;text-align: center !important;font-family:'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;font-size:12px !important;height: 100px !important;width: 150px !important;padding:0px !important;">
+                            <apex:image value="{!bundleItem.ProductImageUrl__c}" style="width:75px;height:45px;" />
+                        </td>
+                        <td  style="text-align: left !important;border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                            {!bundleItem.Quantity__c} x {!bundleItem.Product_Name__c} ${!bundleItem.Price__c}
+                        </td> 
+                        <td style="border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                        </td>
+                        <td style="border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                        </td>
+                        <td style="border-bottom:1px solid #ddd !important;padding:8px !important;font-size:12px !important;font-family: 'wf_segoe-ui_normal','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif !important;">
+                        </td>
+                    </tr>   
+                </apex:repeat>
+            </tr>  
+        </apex:outputPanel>
+    </apex:repeat>
+</apex:component>

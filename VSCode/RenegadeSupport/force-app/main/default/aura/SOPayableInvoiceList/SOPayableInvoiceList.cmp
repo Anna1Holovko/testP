@@ -1,0 +1,34 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:hasRecordId" controller="SOPayableInvoiceListController"  access="global">
+    <aura:handler name='init' value="{!this}" action="{!c.Init}" />
+    <aura:attribute name="invoceList" type="Invoice__c[]"/> 
+    <!--
+    <lightning:recordForm recordId="{!v.recordId}" 
+                              objectApiName="Sales_Order__c"
+                              fields="Name, RecordType, Items_invoiced__c, Customer_Name__c, Sub_Total__c, TaxAmount__c, DiscountAmount__c, Grand_Total__c" />-->
+    
+    
+
+    <!-- attributes -->
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="columnsData" type="List"/>
+    <aura:attribute name="rowsData" type="List"/>
+
+   
+    <div style="height: 300px">
+        <!-- <lightning:datatable
+                keyField="id"
+                data="{! v.data }"
+                resizeColumnDisabled="true"
+                columns="{! v.columns }"
+                onrowselection="{! c.onRowSelected }"
+                hideCheckboxColumn="true"/> -->
+
+        <aura:if isTrue="{!and(!!v.rowsData, v.rowsData.length > 0)}">
+            <c:CustomDataTable_Component lines="{!v.rowsData}" columns="{!v.columnsData}"/>      
+            <aura:set attribute="else">
+                    No Payments  to present
+            </aura:set>
+        </aura:if>   
+    </div>
+</aura:component>

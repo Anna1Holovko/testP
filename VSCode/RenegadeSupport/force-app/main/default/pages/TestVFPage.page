@@ -1,0 +1,20 @@
+<apex:page controller="repeatCon">
+    <script>
+   
+    console.log( document.getElementById("AA123"););
+    </script>
+       <apex:form >
+
+                <!-- Initialise-->
+
+             <apex:repeat value="{!StringsVal}" var="acc" id="AA123">
+
+                      <apex:outputText value="{!acc}"   />
+
+                      
+
+              </apex:repeat>
+
+       </apex:form>
+
+</apex:page>

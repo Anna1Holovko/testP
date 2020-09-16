@@ -1,0 +1,36 @@
+.THIS {
+  min-height: 250px;
+}
+.THIS .no-click {
+  pointer-events: none;
+}
+.THIS .label-hidden .slds-form-element__label {
+  display: none;
+}
+.THIS .slds-backdrop {
+  pointer-events: none;
+  background: transparent;
+}
+.THIS .slds-backdrop.slds-backdrop_open {
+  pointer-events: all;
+}
+.THIS .slds-backdrop.slds-backdrop_open + * {
+  z-index: 9002;
+  position: relative;
+}
+.THIS .slds-dropdown {
+  padding-top: 0;
+  margin-top: 0;
+}
+.THIS input[readonly]{
+  cursor: pointer;
+}
+.THIS .filter-item {
+  padding: 2px 5px;
+}
+.THIS .error-show{
+  border-color: red !important;
+}
+.THIS .error-panel{
+  color: red;
+}

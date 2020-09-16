@@ -1,0 +1,3 @@
+<design:component>
+	<design:attribute name="APIfieldName" label="API field name for Parent Object" description="API field name for Parent Object" required="true"/>
+</design:component>

@@ -1,0 +1,27 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId" access="global">
+    <aura:attribute name="APIfieldName" type="String"/>
+    <aura:attribute name="currentRecord" type="Object"/>
+    <aura:attribute name="currentRecordWithFields" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="parentID" type="String"/>
+    <aura:attribute name="fieldsToQuery" type="String[]" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <aura:if isTrue="{! and(!!v.fieldsToQuery, v.fieldsToQuery.length > 0)}">
+        <force:recordData aura:id="record"
+                          recordId="{!v.recordId}"
+                          targetError="{!v.recordError}"
+                          
+                          recordUpdated="{!c.handleRecordUpdated}"
+                          targetRecord = "{!v.currentRecord }"                     
+                          fields="{!v.fieldsToQuery}"
+                          targetFields="{!v.currentRecordWithFields}"/>
+        
+        
+        <aura:if isTrue="{!not(empty(v.parentID))}">
+            <forceChatter:publisher context="RECORD" recordId="{!v.parentID}" />
+            <forceChatter:feed type="Record" subjectId="{!v.parentID}"    />
+        </aura:if>
+    </aura:if>
+</aura:component>

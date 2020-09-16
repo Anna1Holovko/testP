@@ -1,0 +1,11 @@
+.THIS .scroller{
+    height:16rem;
+}
+
+.THIS .spinner{
+    color:blue;
+}
+
+.THIS .slds-table th, .THIS .slds-table td{
+    white-space: pre-wrap !important;
+}

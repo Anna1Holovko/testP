@@ -1,0 +1,28 @@
+<aura:component>
+  <aura:attribute name="line" type="Object" />
+  <aura:attribute name="checked" type="Boolean" />
+  <aura:attribute name="columns" type="Object[]" />
+  <aura:attribute name="showCheckboxColumn" type="Boolean" default="false" />
+
+  <aura:handler event="c:CustomDataTable_IsALLChecked_Event" action="{!c.handleAllChecked}" />
+
+  <aura:registerEvent name="isCheckedEvent" type="c:CustomDataTable_IsChecked_Event" />
+
+  <tr class="slds-hint-parent">
+    <aura:if isTrue="{!v.showCheckboxColumn}">
+      <td>
+        <div class="table-cell">
+          <lightning:input type="checkbox" variant="label-hidden" onchange="{!c.checkChange}" checked="{!v.checked}" />
+        </div>
+      </td>
+    </aura:if>
+    <aura:iteration items="{!v.line.lines}" var="column_i">
+      <td>
+        <div class="table-cell">
+          <c:CustomDataTableColumn_Component value="{!column_i.value}" type="{!column_i.type}"
+            label="{!column_i.urlLabel}" />
+        </div>
+      </td>
+    </aura:iteration>
+  </tr>
+</aura:component>

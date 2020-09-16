@@ -1,0 +1,143 @@
+<apex:page showHeader="false" sidebar="false" docType="html-5.0" applyHtmlTag="false" action="{!Display}" standardController="Sales_Order__c"
+    extensions="activeSalesOrdersAlertController">
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8" />
+        <title>Active Sales Ordes Alert Message</title>
+        <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <style type="text/css">
+            body {
+                text-align: center;
+            }
+
+            .bs-example {
+                margin: 20px;
+            }
+
+            .blink_text {
+                -webkit-animation-name: blinker;
+                -webkit-animation-duration: 1s;
+                -webkit-animation-timing-function: linear;
+                -webkit-animation-iteration-count: 5;
+
+
+                -moz-animation-name: blinker;
+                -moz-animation-duration: 1s;
+                -moz-animation-timing-function: linear;
+                -moz-animation-iteration-count: 5;
+                animation-name: blinker;
+                animation-duration: 1s;
+                animation-timing-function: linear;
+                animation-iteration-count: 5;
+                color: red;
+            }
+
+            @-moz-keyframes blinker {
+                0% {
+                    opacity: 1.0;
+                }
+                50% {
+                    opacity: 0.0;
+                }
+                100% {
+                    opacity: 1.0;
+                }
+            }
+
+            @-webkit-keyframes blinker {
+                0% {
+                    opacity: 1.0;
+                }
+                50% {
+                    opacity: 0.0;
+                }
+                100% {
+                    opacity: 1.0;
+                }
+            }
+
+            @keyframes blinker {
+                0% {
+                    opacity: 1.0;
+                }
+                50% {
+                    opacity: 0.0;
+                }
+                100% {
+                    opacity: 1.0;
+                }
+            }
+
+            span.icon {
+                font-family: FontAwesome;
+            }
+
+            span.icon:before {
+                font-family: FontAwesome;
+                content: "\f015";
+            }
+
+            .alert {
+                background: #ffc;
+                border-color: #f90;
+            }
+
+            .blink_text a {
+                text-decoration: underline;
+            }
+
+            <!-- .alert-alert {
+                background: #B7F9A6;
+                color: #424242;
+            }
+
+            -->.blink_text_info {
+                color: #464646;
+            }
+
+        </style>
+    </head>
+
+    <body>
+
+        <!--  <apex:outputPanel rendered="{!!isNotify}">
+                <div class="bs-example">
+                    <div class="alert alert-alert">
+                        <a href="#" class="close" data-dismiss="alert">&times;</a>
+                       <span class="blink_text blink_text_info"><i class="fa fa-info-circle"></i><strong> Info!</strong> <b> This Customer (<a href="/{!Sales_Order__c.Customer_Name__c}" target="_blank"> {!customerName} </a>) has no other open SalesOrders &nbsp; </b> </span>
+                    </div>
+                </div>
+            </apex:outputPanel>-->
+        <apex:outputPanel rendered="{!isNotify}">
+            <div class="bs-example">
+                <div class="alert alert-alert">
+                    <a href="#" class="close" data-dismiss="alert">&times;</a>
+                    <span class="blink_text blink_text_info">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <strong> Attention!</strong> This Customer (
+                        <a href="/{!Sales_Order__c.Customer_Name__c}" target="_blank">
+                        {!customerName} </a>) has {!count} open SalesOrders &nbsp; </span>
+                    <p></p>
+                </div>
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!checkFraudAlert}">
+            <div class="bs-example">
+                <div class="alert alert-alert">
+                    <a href="#" class="close" data-dismiss="alert">&times;</a>
+                    <span class="blink_text blink_text_info">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <strong> Attention!</strong> Fraud Alert - Pinger or TextPlus phone numbers&nbsp;</span>
+                    <p></p>
+                </div>
+            </div>
+        </apex:outputPanel>
+    </body>
+
+    </html>
+</apex:page>

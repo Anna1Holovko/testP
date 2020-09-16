@@ -1,0 +1,61 @@
+<!-- Displays the Related List of Bundle Items in Products related to that Product -->
+
+<apex:page standardController="Products__c" extensions="BundleRelatedList">
+    <apex:form >
+    <style>  
+        .sfdc_richtext img { 
+        border: 0;
+        width: 70px !important;
+        height: 45px !important;
+        }
+        .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+         margin: 0;
+        }
+        .bPageBlock .detailList .dataCol {
+         width: 0 !important;
+        }
+        .bPageBlock .detailList .labelCol {
+         width: 0 !important;
+        }
+        .bPageBlock .labelCol{
+        padding-right: 0px !important; 
+        padding-left: 0px !important;
+        }
+        .bPageBlock .dataCol {
+         padding-right: 0px !important;
+         padding-left: 5px;
+        }
+        .price_fields{
+        padding-right: 5px !important;white-space: nowrap !important;text-align: right !important;
+        }
+        img.checkImg {
+        width: 21px;
+        height: 16px;
+        }
+        img{width:75px;height:45px;}
+    </style>
+    <apex:pageBlock >
+        <apex:pageBlockSection >
+            <div style="width:100%;float:left;">
+                <apex:commandLink action="{!newBundleItem}" target="_blank" style="margin-left:400px;text-decoration:none">
+                    <apex:commandButton value="New Bundle Item" />
+                </apex:commandLink> 
+            </div>
+            <apex:pageBlockTable value="{!BiRelated}" var="item" width="100%">
+                <apex:column value="{!item.Order__c}" />
+                <apex:column headerValue="Bundle Item Number">
+                    <apex:commandLink value="{!item.name}" action="/{!item.id}" target="_blank"/>
+                </apex:column>
+                <apex:column headerValue="Product">
+                    <apex:commandLink value="{!item.Product__r.Name}" action="/{!item.Product__c}" target="_blank"/>
+                </apex:column>
+                
+                <apex:column value="{!item.SKU__c}" />
+                <apex:column value="{!item.Include__c}" />
+                <apex:column value="{!item.Sales_Price__c}" />
+                <apex:column value="{!item.Product__r.ProductImage__c}"/>
+            </apex:pageBlockTable> 
+            </apex:pageBlockSection>
+    </apex:pageBlock>
+   </apex:form>
+</apex:page>

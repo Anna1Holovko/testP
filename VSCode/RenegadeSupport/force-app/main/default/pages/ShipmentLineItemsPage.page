@@ -1,0 +1,963 @@
+<apex:page showHeader="false" sidebar="false" lightningStylesheets="true" standardController="Shipment__c" extensions="ShipmentLineItemsController" docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="x-ua-compatible" content="ie=edge" />
+            <title>Salesforce Lightning Design System Trailhead Module</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <!-- Import the Design System style sheet -->
+            <apex:slds /> 
+            <style>
+                .empty {
+                display: none;
+                }
+                .headerRow div {
+                white-space: normal;
+                text-align: left;
+                }
+                th.headerRow {
+                vertical-align: top;
+                }
+                th.headerRow:first-child {
+                width: 30px;
+                text-align: center;
+                }
+                .pbHeader .pbTitle, .pbBottomButtons .pbTitle {
+                display: none;
+                }
+                .pbHeader .pbButton, .pbBottomButtons .pbButtonb {
+                text-align: center;
+                }
+                .disabled{
+                display: none;
+                }
+                .slds-scope ~ .datePicker{
+                z-index: 10000;
+                }
+                .hiddenPage{
+                overflow: hidden;
+                height: 400px;
+                }
+                .firstColumn{
+                text-align: center;
+                width: 80px;
+                height: 80px;
+                display: table-cell;
+                }
+                .secondColumn{
+                
+                text-align: center;
+                display: table-cell;
+                height: 80px;
+                padding: 15px;
+                vertical-align: middle;
+                }
+                .thirdColumn{
+                text-align: center;
+                height: 80px;
+                vertical-align: middle;
+                line-height: 80px;
+                display: table-cell;
+                width: 30px;
+                }
+                .splitInput{
+                margin: 10px;
+                width: 50px;
+                }
+                .splitOutput{
+                white-space: nowrap;
+                word-wrap: normal;
+                margin: 5px;
+                min-width: 100px;
+                width: 120px;
+                }
+                .apexp, .individualPalette, .Custom88Block, .bPageBlock, .brandSecondaryBrd, .apexDefaultPageBlock, .secondaryPalette{
+                height: inherit;
+                }
+            </style>
+            <script src="../../soap/ajax/43.0/connection.js" type = "text/javascript"></script>
+            <script src="../../soap/ajax/43.0/apex.js" type = "text/javascript"></script>
+        </head>
+        <div class="slds-scope">
+            <apex:form id="line_list" styleClass="formId">
+                <apex:actionstatus id="sts">
+                    <apex:facet name="start">
+                        <div class="slds-spinner_container">
+                            <div id="mySpinner" role="status" class="slds-spinner slds-spinner_medium">
+                                <span class="slds-assistive-text">Loading</span>
+                                <div class="slds-spinner__dot-a"></div>
+                                <div class="slds-spinner__dot-b"></div>
+                            </div>
+                        </div>
+                    </apex:facet>
+                    
+                </apex:actionstatus>
+                <div class="slds-spinner_container" style="display: none" id="spinner">
+                    <div id="mySpinner" role="status" class="slds-spinner slds-spinner_medium">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div> 
+                <apex:pageBlock rendered="{!shipmentLineList.size > 0}" mode="edit" id="blockId">
+                    <apex:pageMessages id="error" />
+                    <apex:pageBlockSection >
+                        
+                        <apex:pageBlockTable value="{!shipmentLineList}" var="item" width="100%">
+                            <!-- <apex:inputCheckbox id="allCheck" value="{!item.isSelected}"/>    -->                         
+                            <apex:column >
+                                <apex:facet name="header">
+                                    <apex:inputCheckbox id="checkedAll" onclick="selectAllCheckboxes(this);"/>
+                                </apex:facet>
+                                <apex:inputCheckbox id="checkBoxID" styleClass="checkboxItem"  value="{!item.isSelected}" onclick="selectOneCheckbox(this);"/>                            
+                            </apex:column>
+                            <apex:repeat var="field" value="{!fieldSets}">
+                                
+                                <apex:column rendered="{!field == 'Name'}" width="100">
+                                    <apex:facet name="header" >Name</apex:facet>
+                                    <apex:outputlink value="/{!item.shipment.Id}" target="_blank">{!item.shipment.Name}</apex:outputlink>
+                                </apex:column>        
+                                <apex:column rendered="{!field != 'Name'}" value="{!item.shipment[field]}"/>
+                                
+                                
+                            </apex:repeat> 
+                        </apex:pageBlockTable>
+                        
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons id="buttonsBlock">
+                        <apex:commandButton status="sts" id="btn_update" action="{!processSelected}" value="Update" reRender="error,blockId" oncomplete="showModal('update')"/>
+                        <apex:commandButton id="btn_split" rendered="{!canSplit}" action="{!splitButtonHandle}" value="Split" reRender="error,blockId" oncomplete="showModal('split')"/>
+                        <apex:actionFunction action="{!splitButtonConditions}" name="splitCheck"/>
+                        <!-- <apex:commandButton value="New Replacement PO" action="{!goToNewReplacementPO}" style="visibility : hidden; " styleClass="newPoButton" rendered="{!userType == 'Standard'}" /> -->
+                        
+                        <script>
+                        if('{!urlToNewPo}' != ''){
+                            top.window.location.href = 'https://'+'{!urlToNewPo}';
+                        }
+                        function showModal(value){
+                            if({!showError} == false){
+                                var x = document.getElementById("modal_window");
+                                var form = document.getElementsByClassName("formId")[0];
+                                form.classList.add("hiddenPage");
+                                
+                                x.style.display = "block";
+                                
+                                document.getElementById("modalWindowUpdate").style.display = (value === "update") ? "block" : "none";
+                                document.getElementById("modalWindowSplit").style.display = (value === "update") ? "none" : "block";
+                            }
+                            
+                        }
+                        
+                        function selectOneCheckbox(elem){
+                            splitCheck();
+                        }
+                        
+                        function selectAllCheckboxes(elem){
+                            var inputs = document.getElementsByTagName("input");
+                            
+                            if(elem.checked){
+                                for (var i = 0; i < inputs.length; i++) { 
+                                    var input = inputs.item(i);
+                                    if (input.type == "checkbox") {
+                                        input.checked = "checked";
+                                    }
+                                }
+                            }else{
+                                for (var i = 0; i < inputs.length; i++) { 
+                                    var input = inputs.item(i);
+                                    if (input.type == "checkbox") {
+                                        input.checked = "";
+                                    }
+                                }
+                            }
+                            splitCheck();
+                        }
+                        
+                        function ucheckedSelectAllBtn(){
+                            var inputs = document.getElementsByTagName("input");
+                            for (var i = 0; i < inputs.length; i++) { 
+                                var input = inputs.item(i);
+                                if (input.type == "checkbox") {
+                                    input.checked = "";
+                                }
+                            }
+                            splitCheck();
+                        }
+                        
+                        function showButton(){
+                            debugger;
+                            var inputs = document.getElementsByClassName ("checkboxItem");
+                            var isShow = false;
+                            for (var i = 0; i < inputs.length; i++) { 
+                                var input = inputs.item(i);
+                                if (input.type == "checkbox" && input.checked == true) {
+                                    isShow = true;
+                                }
+                            }
+                            var buttons = document.getElementsByClassName ("newPoButton");
+                            for (var i = 0; i < buttons.length; i++) { 
+                                if(isShow){
+                                    buttons[i].style.visibility = 'visible';
+                                }else{
+                                    buttons[i].style.visibility = 'hidden';
+                                }
+                            }
+                            
+                        }
+                        </script>
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+                
+                <div id="modal_window" class="demo-only" style="height: 840px; display: none;">
+                    
+                    <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header slds-modal__header_empty">
+                                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                                    <span class="slds-assistive-text">Close</span>
+                                </button>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium slds-grid slds-align_absolute-center" id="modal-content-id-1" style="width: 100%; height: 100%; align-items: unset;">
+                                <div id="modalWindowSplit" style="width: 100%; height: 100%;">
+                                    <apex:pageBlock id="s" >
+                                        <div style="text-align: center;">
+                                            <apex:outputText value="How would you like to split {!shipmentProductQuantity} items?"/>
+                                        </div>
+                                        <br/>
+                                        <apex:pageBlockSection columns="2">
+                                            <apex:pageBlockSectionItem >
+                                                <apex:outputText value="Group 1:" styleClass="splitOutput"/>
+                                                <apex:input id="splitAmount1" value="{!splitAmount1}" type="number" styleClass="splitInput" onchange="firstchanged(this.value);"/>
+                                            </apex:pageBlockSectionItem>
+                                            <apex:pageBlockSectionItem >
+                                                <apex:outputText value="Group 2:" styleClass="splitOutput"/>
+                                                <apex:input id="splitAmount2" value="{!splitAmount2}" type="number" styleClass="splitInput" onchange="secondchanged(this.value);"/>
+                                            </apex:pageBlockSectionItem>
+                                        </apex:pageBlockSection>
+                                    </apex:pageBlock>
+                                </div>
+                                <div id="modalWindowUpdate">
+                                    
+                                    <!--div class="slds-form-element">
+<label class="slds-form-element__label" for="select-01">Select status:</label>
+<div class="slds-form-element__control">
+<div class="slds-select_container">
+<apex:selectList styleClass="slds-select" id="select-01" value="{!newStatus}" size="1">
+<apex:selectOptions value="{!pickListValuesList}"></apex:selectOptions>
+</apex:selectList>
+
+</div>
+</div>
+</div-->
+                                    <apex:outputPanel id="dateDelivery"> 
+                                        <apex:repeat value="{!$ObjectType.Shipment_Line_Item__c.FieldSets[fieldSetToUpdate]}" var="field_i"> 
+                                            
+                                            <div>
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">{!field_i.label}</label>
+                                                <div class="slds-form-element {!field_i}">
+                                                    <apex:inputField styleClass="{!field_i.label}"  value="{!tmpUpdateItem[field_i]}" label="{!field_i.label}" onchange="checkRe2Visibility()" >
+                                                        <!-- <apex:actionSupport event="onchange" rerender="line_list"/> -->
+                                                    </apex:inputField> 
+                                                </div>
+                                            </div>
+                                            
+                                        </apex:repeat>
+                                        
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!tmpUpdateItem.Shipment_Item_Status__c == 'Scheduled Delivery'}" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Scheduled Delivery Date</label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Scheduled_Delivery_Date__c"  value="{!tmpUpdateItem.Scheduled_Delivery_Date__c}" label="Scheduled Delivery Date" /> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'At Local Delivery Company' || tmpUpdateItem.Shipment_Item_Status__c == 'Scheduled Delivery')  
+                                                                        || ((tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed No Issues' 
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues' 
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Send to Consignment'
+                                                                        
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery' || tmpUpdateItem.Shipment_Item_Status__c == 'Delivered No Issues') && isAllDrop_Off_Null == true)}" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Drop-Off Date(Actual) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Drop_Off_Date_Actual__c "  value="{!tmpUpdateItem.Drop_Off_Date_Actual__c }" label="Drop-Off Date(Actual)" /> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Delivered No Issues')}" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Delivery Date </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Delivery_Date_Actual__c"  value="{!tmpUpdateItem.Delivery_Date_Actual__c}" label="Delivery Date" /> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <!-- <div>
+
+<apex:outputPanel rendered="{!tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues' 
+|| tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+|| tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery'}" > 
+
+<label class="slds-form-element__label" for="form-element-01">Technician Scheduled By </label>
+<div class="slds-form-element">
+<apex:inputField styleClass="Tech_Scheduled_By__c "  value="{!tmpUpdateItem.Tech_Scheduled_By__c }" label="Technician Scheduled By" onchange="checkDisableds(this)" /> 
+</div>
+</apex:outputPanel> 
+
+</div> -->
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') }" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Repair Amount </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Repair_Amount__c "  value="{!tmpUpdateItem.Repair_Amount__c }" label="Repair Amount"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') }" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Repair Date (Expected) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Repair_Date_Expected__c "  value="{!tmpUpdateItem.Repair_Date_Expected__c }" label="Repair Date (Expected)"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Replacement') && userType == 'Standard' && userType == 'Standard'}" > 
+                                                <label class="slds-form-element__label" for="form-element-01">Replacement Drop-Off Date (Actual) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Replacement_Drop_off_Date_Actual__c "  value="{!tmpUpdateItem.Replacement_Drop_off_Date_Actual__c }" label="Replacement Drop-Off Date (Actual)"/> 
+                                                </div>
+                                                <label class="slds-form-element__label" for="form-element-01">Replacement Drop-Off Date (Expected) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Replacement_Drop_off_Date_Expected__c "  value="{!tmpUpdateItem.Replacement_Drop_off_Date_Expected__c }" label="Replacement Drop-Off Date (Expected)"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') }" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Repair Date(Actual) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Repair_Date_Actual__c "  value="{!tmpUpdateItem.Repair_Date_Actual__c }" label="Repair Date(Actual)"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair')  && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Status Of Tech Needed </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Status_Of_Tech_Needed__c " value="{!tmpUpdateItem.Status_Of_Tech_Needed__c }" label="Status Of Tech Needed"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Parts Needed') }" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Parts Information </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Parts_Information__c "  value="{!tmpUpdateItem.Parts_Information__c }" label="Parts Information"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Parts Needed') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Parts Arrival Date (Expected) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:outputField styleClass="Parts_Arrival_Expected__c "  value="{!tmpUpdateItem.Parts_Arrival_Expected__c }" label="Parts Arrival Date (Expected)" /> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Parts Needed') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Parts Arrival Date (Actual) </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Parts_Arrival_Date_Actual__c "  value="{!tmpUpdateItem.Parts_Arrival_Date_Actual__c }" label="Parts Arrival Date (Actual)"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Parts Needed') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Parts Are Shipping </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Parts_Are_Shipping__c "  value="{!tmpUpdateItem.Parts_Are_Shipping__c }" label="Parts Are Shipping"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Tech Needed Create Date </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Tech_Needed_Create_Date__c "  value="{!tmpUpdateItem.Tech_Needed_Create_Date__c }" label="Tech Needed Create Date"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Tech Request Submitted Date </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Tech_Request_Submitted_Date__c "  value="{!tmpUpdateItem.Tech_Request_Submitted_Date__c }" label="Tech Request Submitted Date"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!(tmpUpdateItem.Shipment_Item_Status__c == 'Deluxed With Issues'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'In Home Follow Up'
+                                                                        || tmpUpdateItem.Shipment_Item_Status__c == 'Refused Delivery')  && (tmpUpdateItem.Damage_Action__c == 'Repair With Parts' || tmpUpdateItem.Damage_Action__c == 'Repair') && userType == 'Standard'}" >
+                                                <label class="slds-form-element__label" for="form-element-01">Tech Appointment Confirmed </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Tech_Appointment_Confirmed__c "  value="{!tmpUpdateItem.Tech_Appointment_Confirmed__c }" label="Tech Appointment Confirmed"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        <div>
+                                            
+                                            <apex:outputPanel rendered="{!tmpUpdateItem.Shipment_Item_Status__c == 'Hold As Stock'}" > 
+                                                
+                                                <label class="slds-form-element__label" for="form-element-01">Furniture Condition </label>
+                                                <div class="slds-form-element">
+                                                    <apex:inputField styleClass="Furniture_Condition__c "  value="{!tmpUpdateItem.Furniture_Condition__c }" label="Furniture Condition"/> 
+                                                </div>
+                                            </apex:outputPanel> 
+                                            
+                                        </div>
+                                        
+                                        
+                                        
+                                    </apex:outputPanel> 
+                                    <apex:actionFunction reRender="dateDelivery" name="checkRe2Visibility" action="{!clearFile}" oncomplete="checkDisableds()"/> 
+                                    <div id="attachment" style="display: none;">
+                                        <!--apex:outputLabel rendered="{!tmpUpdateItem.Shipment_Item_Status__c == 'Deluxing with Issue'}"-->
+                                        <label class="slds-form-element__label" for="form-element-01">Atachment</label>
+                                        <div class="slds-form-element">
+                                            <input type="file" onchange="setAttachment(this);" multiple="true" id="filesId" />
+                                            <apex:input id="dfile" style="display: none;" styleClass="deluxingAttachment_fileName" value="{!fileName}" />
+                                            <apex:input style="display: none;" styleClass="deluxingAttachment_fileBody" value="{!fileBody}" />
+                                            
+                                            <output id="result" />
+                                            <!-- <apex:inputfile value="{!deluxingAttachment.body}" filename="{!deluxingAttachment.name}"></apex:inputfile> -->
+                                        </div> 
+                                        <!-- </apex:outputLabel> -->
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer"  id="jsscript">
+                                <apex:outputPanel id="theHiddenInput" style="display:none">
+                                    <input value="{!selectedIDs}" id="theHiddenInput"/>
+                                    <input value="{!parentIDs}" id="theHiddenParentId"/>
+                                </apex:outputPanel>
+                                <!--button class="slds-button slds-button_neutral" onclick="canselModal()">Cancel</button-->
+                                <apex:commandButton styleClass="slds-button slds-button_neutral" action="{!cancel}" value="Cancel" reRender="error,blockId" oncomplete="modalWindowClose();" />
+                                <!-- 
+canselModal();checkDisableds();ucheckedSelectAllBtn();
+
+blockId
+-->
+                                
+                                <script>
+                                function modalWindowClose(){
+                                    canselModal();
+                                    if (document.getElementById("modalWindowUpdate").style.display == "block"){
+                                        checkDisableds();
+                                        ucheckedSelectAllBtn();
+                                    }
+                                    else {
+                                        splitCheck();
+                                        //document.getElementById("splitAmount1").value = document.getElementById("splitAmount2").value = "0";
+                                    }
+                                }
+                                function canselModal(){
+                                    console.log('canselModal');
+                                    var x = document.getElementById("modal_window"); 
+                                    x.style.display = "none";
+                                    var form = document.getElementsByClassName("formId")[0];
+                                    form.classList.remove("hiddenPage");
+                                    
+                                    //cancelJS();  
+                                }
+                                var second;
+                                var first;
+                                
+                                function firstchanged(val){
+                                    first = val;
+                                }
+                                function secondchanged(val){
+                                    second = val;
+                                }
+                                function check(){
+                                    debugger;
+                                    document.getElementById("spinner").style.display = "block";
+                                    //console.log(document.getElementById("spinner").style.display);
+                                    if (document.getElementById("modalWindowUpdate").style.display == "block"){
+                                        var inputs = document.getElementsByTagName("input");
+                                        
+                                        var shipment_status = document.getElementsByClassName('Shipment Item Status')[0];
+                                        var shipment_date = document.getElementById('j_id0:line_list:j_id64');
+                                        //alert('**'+shipment_status.value + '***' + shipment_date.value  );
+                                        if(!!shipment_status && (shipment_status.value == 'At Local Delivery Company') && (shipment_date.value  == '' || shipment_date.value  == null)){
+                                        alert('Can\'t update shipment with "At Local Delivery Company" status and without date');
+                                        document.getElementById("spinner").style.display = "none";
+                                        return false;
+                                        }
+                                        
+                                        var count = 0;
+                                        for (var i = 0; i < inputs.length; i++) { 
+                                            var input = inputs.item(i);
+                                            if (input.type == "checkbox" && input.checked == true) {
+                                                count++;
+                                            }
+                                        }
+                                        var obj = document.getElementsByClassName('Shipment_Item_Status__c')[0];
+                                        if(count > 1 && !!obj && (obj.value == 'Deluxed With Issues' || obj.value == 'In Home Follow Up')){
+                                            alert('Can\'t update multiple shipment with "deluxing with issue" status');
+                                        }else{
+                                            saveJs();
+                                        }
+                                    }
+                                    else {
+                                        if (second == null || second == ''){
+                                             second = '{!splitAmount2}';
+                                        }
+                                        if (first == null || first == ''){
+                                             first = '{!splitAmount1}';
+                                        }
+                                        if (parseInt(first) + parseInt(second) != parseInt('{!shipmentProductQuantity}') || parseInt(first) < 1 || parseInt(second) < 1){
+                                            alert('Sum of both fields must be equal Shipment Product Quantity of Shipment Line Item');
+                                            document.getElementById("spinner").style.display = "none";
+                                            return;
+                                        }
+                                        splitSave();
+                                    }
+                                    canselModal();
+                                    //document.getElementById("spinner").style.display = "none";
+                                    //setTimeout(function() { document.getElementById("spinner").style.display = "none"; }, 1000);
+                                    //console.log(document.getElementById("spinner").style.display);
+                                }
+                                function checkDisableds(){
+                                    if (!!'{!statusExcludeValues}' && '{!statusExcludeValues}' != '[]' && '{!userType}' != 'Standard') {
+                                            var valuesToExclude = '{!statusExcludeValues}';
+                                            var select = document.getElementsByClassName('Shipment_Item_Status__c');
+                                            if (!!select) {
+                                                select = select[0].childNodes[0];
+                                                for (i = select.length - 1; i > 0; --i) {
+                                                    if (valuesToExclude.includes(select.options[i].value)) {
+                                                        select.remove(i);
+                                                    }
+                                                }
+                                            }
+                                    }
+                                    
+                                    var obj = document.getElementsByClassName('Shipment Item Status')[0];
+                                    var da = document.getElementsByClassName('Damage_Action__c')[0];
+                                    var attach =   document.getElementById ('attachment');
+                                    
+                                    
+                                    
+                                    
+                                    if(!!obj && (obj.value == 'Deluxed With Issues' || obj.value == 'In Home Follow Up' || obj.value == 'Refused Delivery')){
+                                        //document.getElementsByClassName('saveButton')[0].disabled = true;
+                                        attach.style.display = "block";
+                                    }else {
+                                        document.getElementsByClassName('saveButton')[0].disabled = false;
+                                        attach.style.display = "none";
+                                    }
+                                    if(!!obj && ((obj.value == 'Refused Delivery') && (!!da &&(da.getElementsByTagName("select")[0].value == 'No Fit')))){
+                                        document.getElementsByClassName('saveButton')[0].disabled = false;
+                                        attach.style.display = "none";
+                                        var input =   document.getElementById ('filesId');
+                                        uploadedFiles = [];
+                                        input.value = null;
+                                        var output = document.getElementById("result");
+                                        output.innerHTML = null;
+                                    }
+                                    var selects = document.getElementsByTagName('select');
+                                    setTimeout( function(){
+                                        for (var i = 0; i < selects.length; i++ ) {
+                                            if ( selects[i].disabled ) {
+                                                selects[i].parentNode.parentNode.parentNode.classList.add('disabled');
+                                            } else {
+                                                selects[i].parentNode.parentNode.parentNode.classList.remove('disabled');
+                                            }
+                                        }
+                                    }, 150)
+                                }
+                                window.onload = function(){
+                                    checkDisableds()
+                                }
+                                
+                                var uploadedFiles = [];
+                                
+                                function setAttachment(obj){
+                                    
+                                    var reader = new FileReader();
+                                    var file= obj.files[0];
+                                    var fileName;
+                                    var fileBody;
+                                    
+                                    
+                                    if(typeof file === "undefined"){
+                                        
+                                        return;
+                                    }
+                                    for (var i = 0; i < obj.files.length; i++) {
+                                        uploadedFiles.push(obj.files[i]);
+                                    }
+                                    
+                                    var output = document.getElementById("result");
+                                    output.innerHTML = null;
+                                    
+                                    debugger;
+                                    
+                                    for (var i = 0; i < uploadedFiles.length; i++) {
+                                        var file = uploadedFiles[i];
+                                        //Only pics
+                                        var image = false;
+                                        if (file.type.match('image')){
+                                            image = true;
+                                        }
+                                        
+                                        var picReader = new FileReader();
+                                        picReader.addEventListener("load", createImageView.bind(this, file.name, i, output, image) );
+                                        //Read the image
+                                        picReader.readAsDataURL(file);
+                                        document.getElementsByClassName('saveButton')[0].disabled = false;
+                                    }
+                                    
+                                    
+                                    /*reader.onload = function(event){
+                              
+                              debugger;
+                              fileName = file.name;
+                              
+                              fileBody = event.target.result;
+                              debugger;    
+                              //document.getElementsByClassName('deluxingAttachment_fileName')[0].value = fileName;
+                              //document.getElementsByClassName('deluxingAttachment_fileBody')[0].value = fileBody;
+                              document.getElementsByClassName('saveButton')[0].disabled = false;
+                          }
+                          reader.readAsDataURL(file);*/
+                                    
+                                }
+                                
+                                function createImageView( name, index, output, image){
+                                    var picFile = event.target;
+                                    var div = document.createElement("div");
+                                    div.style.width="100%";
+                                    div.style.display="table";
+                                    var innerText = "";
+                                    if(image){
+                                        innerText += "<div class='firstColumn'><img class='thumbnail' style='width:80px; height:80px' src='" + picFile.result + "'" + "title='" + name + "'/></div>";
+                                    }
+                                    else{
+                                        innerText += "<div class='firstColumn'></div>";
+                                    }
+                                    innerText += "<div class='secondColumn'>" + name + "</div>" + "<div class='thirdColumn'><button type='button' onclick='deleteItem(" + index + ")' value='Delete' style='border: none;background: none;' >&#x274E</button></div>"
+                                    div.innerHTML = innerText;
+                                    output.insertBefore(div, null);
+                                }
+                                
+                                function deleteItem(index){
+                                    debugger;
+                                    uploadedFiles.splice(index, 1);
+                                    //document.getElementById('filesId').value = uploadedFiles;
+                                    var output = document.getElementById("result");
+                                    output.innerHTML = null;
+                                    
+                                    for (var i = 0; i < uploadedFiles.length; i++) {
+                                        var file = uploadedFiles[i];
+                                        //Only pics
+                                        var image = false;
+                                        if (file.type.match('image')){
+                                            image = true;
+                                        }
+                                        var picReader = new FileReader();
+                                        picReader.addEventListener("load", createImageView.bind(this, file.name, i, output, image) );
+                                        //Read the image
+                                        picReader.readAsDataURL(file);
+                                        document.getElementsByClassName('saveButton')[0].disabled = false;
+                                    }
+                                }
+                                
+                                var uploadedAttachments = [];
+                                
+                                function uploadAttachment(file, isLast){
+                                    //debugger;
+                                    var reader = new FileReader();
+                                    if(typeof file === "undefined"){
+                                        return;
+                                    }
+                                    var file = file;
+                                    
+                                    var isShow = true;
+                                    if (!file.type.match('image')){
+                                        isShow = false;
+                                    }
+                                    reader.onload = function(event){
+                                        console.log(event);
+                                        //   var parentId = document.getElementById("theHiddenInput").value.replace(";","");
+                                        
+                                        var grandparentId = document.getElementById("theHiddenParentId").value; 
+                                        var parentId = document.getElementById("theHiddenInput").value;
+                                        // var parentId=parentId.split(';')[0]; 
+                                        /************************************************code added***************************************/
+                                                 var list = [1, 2, 3, 4];
+                                                 list.length=0;
+                                                 var j=0;
+                                                 for(var i=0;i<parentId.length;i++){                         
+                                                 if(parentId[i]==';'){
+                                                 console.log('i match-------->'+i);
+                                                 console.log('j-------->'+j);
+                                                 var sub=parentId.substring(j,i);
+                                                 list.push(sub);
+                                                 console.log(sub.length);
+                                                 j=i+1;
+               
+                                                 }
+                                            }
+                                        console.log('list------>'+list);
+                                        console.log('list length--->'+list.length);
+                                        /************************************************code end*****************************************/
+                                        console.log('parentId-------->'+parentId);
+                                        console.log('grandparentId-------->'+grandparentId);
+                                        var __sfdcSessionId = '{!$Api.Session_ID}';
+                                        sforce.connection.sessionId = '{!$Api.Session_ID}';
+                                        sforce.connection.serverUrl = '{!$Site.Prefix}/services/Soap/u/40.0';
+                                        var contentVersionList=['id1','id2'];
+                                        contentVersionList.length=0;
+                                        for(var i=0;i<list.length;i++){
+                                      console.log('848744874874-------->'+i);   
+                                        var contentVersion = new sforce.SObject('ContentVersion');
+                                        contentVersion.Title = file.name;
+                                        contentVersion.PathOnClient = file.name;
+                                        contentVersion.FirstPublishLocationId = list[i];
+                                        contentVersion.Description = '';  
+                                        
+                                        var binary = "";
+                                        var bytes = new Uint8Array(event.target.result);
+                                        var length = bytes.byteLength;
+                                        
+                                        for (var j = 0; j < length; j++){
+                                            binary += String.fromCharCode(bytes[j]);
+                                        }
+                                        
+                                        contentVersion.VersionData = (new sforce.Base64Binary(binary)).toString();
+                                        contentVersionList.push(contentVersion);    
+                                        }
+                                        console.log('before create');
+                                        console.log('contentversionLength-------------------->'+contentVersionList.length); 
+                                        for(var i=0;i<contentVersionList.length;i++){
+                                           
+                                        sforce.connection.create([contentVersionList[i]],
+                                                                 {
+                                                                     onSuccess : function(result, source)
+                                                                     {
+                                                                         debugger;
+                                                                         if (result[0].getBoolean("success"))
+                                                                         {
+                                                                             console.log('i----------------->'+i);
+                                                                             console.log("new attachment created with id " + result[0].id);
+                                                                             var documentId = sforce.connection.query("SELECT Id FROM ContentDocument WHERE LatestPublishedVersionId = '"+ result[0].id +"'").records["Id"]
+                                                                             uploadedAttachments.push(documentId);
+                                                                             var linkList = [];
+                                                                             var contentDocumentLinkShip = new sforce.SObject('ContentDocumentLink');
+                                                                             contentDocumentLinkShip.ContentDocumentId = documentId;
+                                                                             contentDocumentLinkShip.LinkedEntityId = grandparentId.split(';')[0];
+                                                                             contentDocumentLinkShip.ShareType = 'V';
+                                                                             linkList.push(contentDocumentLinkShip);
+                                                                             
+                                                                             var contentDocumentLinkSO = new sforce.SObject('ContentDocumentLink');
+                                                                             contentDocumentLinkSO.ContentDocumentId = documentId;
+                                                                             contentDocumentLinkSO.LinkedEntityId = grandparentId.split(';')[1];
+                                                                             contentDocumentLinkSO.ShareType = 'V';
+                                                                             linkList.push(contentDocumentLinkSO);
+                                                                             
+                                                                             var result = sforce.connection.create(linkList);
+                                                                         }
+                                                                         else
+                                                                         {
+                                                                             console.log("failed to create attachment " + result[0]);
+                                                                         }
+                                                                         
+                                                                         
+                                                                         if(isLast){
+                                                                             var spinner = document.getElementById("spinner");
+                                                                             spinner.style.display = "none";
+                                                                             verifyErrors(); 
+                                                                             
+                                                                         }
+                                                                         
+                                                                         
+                                                                     },
+                                                                     onFailure : function(error, source)
+                                                                     {
+                                                                         console.log("an error has occurred " + error);
+                                                                         if(isLast){
+                                                                             var spinner = document.getElementById("spinner");
+                                                                             spinner.style.display = "none"; 
+                                                                             rerenderPage();
+                                                                         }
+                                                                         
+                                                                     }
+                                                                 });   
+                                            }
+                                        
+                                        if(isLast){
+                                            checkDisableds();ucheckedSelectAllBtn();
+                                        }
+                                    }
+                                    reader.readAsArrayBuffer(file);
+                                }
+                                function startUploadFiles(){
+                                    debugger;
+                                    if(uploadedFiles.length > 0){
+                                        var spinner = document.getElementById("spinner");
+                                        spinner.style.display = "block";
+                                        for(var i=0 ; i < uploadedFiles.length; i++){
+                                            uploadAttachment(uploadedFiles[i], i == (uploadedFiles.length - 1));
+                                            console.log('called to uploadAttach');
+                                        }
+                                      
+                                    }else{
+                                        //checkDisableds();ucheckedSelectAllBtn();
+                                        //rerenderPage();
+                                        verifyErrors();
+                                    }                         
+                                }
+                                
+                                function showErrors(){
+                                    var errors = document.querySelectorAll('span[id*="error"]');
+                                    console.log('errors = ', errors);
+                                    debugger;
+                                    if(!errors || errors.length < 2){
+                                        canselModal();
+                                        checkDisableds();ucheckedSelectAllBtn();
+                                        //top.location.reload();
+                                        //rerenderPage();
+                                    }else{
+                                        sforce.connection.deleteIds(uploadedAttachments);
+                                        uploadedAttachments = [];
+                                        canselModal();
+                                        checkDisableds();ucheckedSelectAllBtn();
+                                    }
+                                   
+                                }
+                                </script>
+                                
+                                <apex:commandButton styleClass="slds-button slds-button_brand saveButton" onclick="check()" value="Save" reRender="error,blockId,line_list" />
+                                <!--<button type="button" onclick="check()" class="slds-button slds-button_brand saveButton" value="Save" >Save</button>-->
+                                <apex:actionFunction status="sts" name="splitSave" action="{!splitSaveHandle}"/>
+                                <apex:actionFunction status="sts" name="saveJs" action="{!collectIds}" reRender="theHiddenInput" oncomplete="startUploadFiles()"> </apex:actionFunction>
+                                <apex:actionFunction status="sts" name="verifyErrors" action="{!updateSelected}" reRender="error" oncomplete="showErrors();"> </apex:actionFunction>
+                                <apex:actionFunction status="sts" name="rerenderPage"  reRender="line_list" oncomplete="checkDisableds();ucheckedSelectAllBtn();"> </apex:actionFunction>
+                                <!-- <apex:commandButton  status="sts" styleClass="slds-button slds-button_brand saveButton" action="{!updateSelected}"  value="Save"  reRender="line_list" /> -->
+                                
+                            </footer>
+                        </div>
+                    </section>
+                    
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </div>
+                <apex:actionFunction name="cancelJS" action="{!cancel}" reRender="error,blockId" oncomplete="checkDisableds();ucheckedSelectAllBtn();"> </apex:actionFunction>
+            </apex:form>
+            
+            <apex:outputPanel rendered="{!shipmentLineList.size == null || shipmentLineList.size == 0}">
+                <div class="demo-only" style="height: 50px;">
+                    <div class="slds-summary-detail slds-is-open">
+                        <button class="slds-button slds-button_icon slds-m-right_x-small" title="Toggle details for Summary Title" aria-controls="expando-unique-id" aria-expanded="true">
+                            <svg class="slds-button__icon slds-summary-detail__action-icon" aria-hidden="true">
+                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#switch" />
+                            </svg>
+                            <span class="slds-assistive-text"></span>
+                        </button>
+                        <div>
+                            <div class="slds-summary-detail__title">
+                                <h3 class="slds-text-heading_small slds-truncate" title="summary title">No shipment line items to present</h3>
+                            </div>
+                            <div aria-hidden="false" class="slds-summary-detail__content" id="expando-unique-id">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+            
+        </div>
+        
+    </html>
+</apex:page>

@@ -1,0 +1,335 @@
+<apex:page standardController="Shipment__c" lightningStylesheets="true" extensions="ConsignmentTrackingPageController" showHeader="false" sidebar="false">
+    <script src="../../soap/ajax/44.0/connection.js" type = "text/javascript"></script>
+    <script src="../../soap/ajax/44.0/apex.js" type = "text/javascript"></script>
+  
+    <style>
+        .hiddenPage{
+            overflow: hidden;
+            height: 400px;
+        }
+        
+       .slds-scope ~ .datePicker{
+          z-index: 10000;
+       }
+        
+       .vl {
+          border-left: 6px solid green;
+          height: 500px;
+       }
+    </style>
+    
+    <apex:slds />
+    <div id="sldsContainer" class="slds-scope">
+        <apex:form id="vf_form" styleClass="formId">
+            <apex:actionstatus id="sts">
+                <apex:facet name="start">
+                    <div class="slds-spinner_container">
+                        <div id="mySpinner" role="status" class="slds-spinner slds-spinner_medium">
+                            <span class="slds-assistive-text">Loading</span>
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </apex:facet>
+            </apex:actionstatus>
+            <apex:pageBlock id="vf_pageBlock">
+                <apex:pageMessages id="errors" />
+                <apex:pageBlockButtons >
+                    <apex:commandButton status="sts" value="Update" action="{!checkForErrors}" reRender="errors" oncomplete="showModal()" />
+                </apex:pageBlockButtons>
+                <apex:pageBlockTable value="{!shipmentLineItemlist}" var="item">
+                    <apex:column style="width:5%" id="CheckboxColumn">
+                        <apex:facet name="header">
+                        <apex:inputCheckbox id="checkedAll" onclick="selectAllCheckboxes(this);"/>
+                        </apex:facet>
+                        <apex:inputCheckbox id="checkBoxID" style="margin-left:5px" value="{!item.isSelected}" onchange="updateShipmentLineItemStatus(this);"/>
+                    </apex:column>
+                    
+                    <apex:column id="Name" >
+                        <apex:facet name="header" >Name</apex:facet>
+                        <apex:outputlink value="/{!item.SLI.Id}" target="_blank">{!item.SLI.Name}</apex:outputlink>
+                    </apex:column>
+                    <apex:column headerValue="Product Name" id="ProductName" value="{!item.SLI.Product_Name__c}" >
+                        
+                    </apex:column>
+                    <apex:column headerValue="Quantity" id="Quantity" value="{!item.SLI.Quantity__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Image" id="Image" value="{!item.SLI.Image__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Shipment Product Name" id="ShipmentProductName" value="{!item.SLI.Shipment_Product_Name__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Shipment Product SKU" id="ShipmentProductSKU" value="{!item.SLI.Shipment_Product_SKU__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Item Condition" id="ItemCondition" value="{!item.SLI.Item_condition__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Shipment Item Status" id="ShipmentItemStatus" value="{!item.SLI.Shipment_Item_Status__c}" >
+                    </apex:column>
+                    <apex:column headerValue="Consignment Status" id="ConsignmentStatus" value="{!item.SLI.Consignment_Status__c}" >
+                    </apex:column>
+                    
+                </apex:pageBlockTable>
+            </apex:pageBlock>
+            	<!-- Action function for checkbox update -->
+            	<apex:actionFunction status="sts" name="updateShipmentLineItemStatusAF" action="{!updateShipmentLineItemStatus}" />
+            
+                <div id="ModalContainer" class="demo-only" style="height: 800px; display:none">
+                      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container" style=" padding-top: 1em; padding-bottom: 1em;">
+                          <header class="slds-modal__header">
+                              <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update Consignment Tracking Details</h2>
+                          </header>
+                          <div class="slds-modal__content slds-p-around_medium slds-grid slds-align_absolute-center" id="modalContent" style="width: 100%; height: 100%;">
+                              <apex:outputPanel id="ShipmentItemStatus">
+                                  <label class="slds-form-element__label" for="form-element-01">Shipment Item Status</label>
+                                  <div class="slds-form-element">
+                                      <apex:inputField onchange="RerenderConsignmentDetails()" value="{!recordToUpdate.Shipment_Item_Status__c}" label="Shipment Item Status" /> 
+                                      <apex:actionFunction name="RerenderConsignmentDetailsSectionsAF" reRender="ConsignmentDetails,ConsignmentDetails2" />
+                                  </div>
+                              </apex:outputPanel>
+                              &nbsp;&nbsp;&nbsp;&nbsp;
+                              <apex:outputPanel id="ConsignmentDetails">
+                                  <apex:outputPanel rendered="{! recordToUpdate.Shipment_Item_Status__c=='Send to Consignment'}" >
+                                      <apex:outputPanel id="ItemCondition">
+                                          <apex:outputLabel styleClass="slds-form-element__label">Item Condition</apex:outputLabel>
+                                          <div class="slds-form-element">
+                                              <apex:inputField onchange="RerenderItemPopularity()" value="{!recordToUpdate.Item_condition__c}" label="Item Condition" /> 
+                                              <apex:actionFunction name="RerenderItemPopularityAF" reRender="ItemPopularity" />
+                                          </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="ItemPopularity" >
+                                          <apex:outputLabel rendered="{!recordToUpdate.Item_condition__c=='New - in original boxes' || recordToUpdate.Item_condition__c=='New - out of original boxes'}" styleClass="slds-form-element__label">Item's Popularity</apex:outputLabel>
+                                          <div class="slds-form-element">
+                                              <apex:inputField rendered="{!recordToUpdate.Item_condition__c=='New - in original boxes' || recordToUpdate.Item_condition__c=='New - out of original boxes'}" value="{!recordToUpdate.Item_s_Popularity__c}" label="Item's Popularity" /> 
+                                          </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="SetorIndividualItem">
+                                          <apex:outputLabel styleClass="slds-form-element__label" >Set or individual item?</apex:outputLabel>
+                                          <div class="slds-form-element">
+                                              <apex:inputField value="{!recordToUpdate.Set_or_individual_item__c}" label="Set or individual item?" /> 
+                                          </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="ReceivedReimbursement">
+                                          <apex:outputLabel styleClass="slds-form-element__label" >Received reimbursement from 3rd party?</apex:outputLabel>
+                                          <div class="slds-form-element">
+                                              <apex:inputField onchange="RerenderReimbursementAmount()" value="{!recordToUpdate.Received_reimbursement_from_3rd_party__c}" label="Received reimbursement from 3rd party?" />
+                                              <apex:actionFunction name="RerenderReimbursementAmountAF" reRender="ReimbursementAmount" />
+                                          </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="ReimbursementAmount">
+                                          <apex:outputPanel rendered="{! recordToUpdate.Received_reimbursement_from_3rd_party__c=='Yes'}"  >
+                                              <apex:outputLabel styleClass="slds-form-element__label">Received Reimbursement Amount</apex:outputLabel>
+                                              <div class="slds-form-element">
+                                                  <apex:inputField value="{!recordToUpdate.Received_Reimbursement_Amount__c}" label="Received Reimbursement Amount" /> 
+                                              </div>
+                                          </apex:outputPanel>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="ConsignmentStatus">
+                                          <apex:outputLabel styleClass="slds-form-element__label">Consignment Status</apex:outputLabel>
+                                          <div class="slds-form-element">
+                                              <apex:inputField onchange="RerenderMethodOfTransportAndScheduledDate()" value="{!recordToUpdate.Consignment_Status__c}" label="Consignment Status" />
+                                              <apex:actionFunction name="RerenderMethodOfTransportandScheduledDateAF" reRender="MethodOfTransport,ScheduledDate" />
+                                          </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="MethodOfTransport">
+                                          <apex:outputPanel rendered="{!recordToUpdate.Consignment_Status__c=='Received quote'}">
+                                              <label class="slds-form-element__label" for="form-element-01">Method of Transport</label>
+                                              <div class="slds-form-element">
+                                                  <apex:inputField value="{!recordToUpdate.Method_of_Transport__c}" label="Method of Transport" /> 
+                                              </div>
+                                              <label class="slds-form-element__label" for="form-element-01">Pickup/Drop off Cost</label>
+                                              <div class="slds-form-element">
+                                                  <apex:inputField value="{!recordToUpdate.Pickup_Drop_off_Cost__c}" label="Pickup/Drop off Cost" /> 
+                                              </div>
+                                          </apex:outputPanel>
+                                      </apex:outputPanel>
+                                      <div>
+                                      <apex:outputPanel id="ScheduledDate">
+                                          <apex:outputPanel rendered="{! recordToUpdate.Consignment_Status__c=='Scheduled'}"  >
+                                              <label class="slds-form-element__label" for="form-element-01">Consignment Schedule Date</label>
+                                              <div class="slds-form-element">
+                                                  <apex:inputField value="{!recordToUpdate.Consignment_Schedule_Date__c}" label="Consignment Schedule Date" /> 
+                                              </div>
+                                          </apex:outputPanel>
+                                      </apex:outputPanel>
+                                      </div>
+                                  </apex:outputPanel>                                  
+                              </apex:outputPanel>
+                              
+                              <apex:outputPanel id="ConsignmentDetails2" style="height:100%"><br/>
+                                  <apex:outputPanel rendered="{! recordToUpdate.Shipment_Item_Status__c=='At Consignment'}" >
+                                      
+                                      <apex:outputPanel id="ConsignmentID">
+                                         <label class="slds-form-element__label" for="form-element-01">Consignment ID Number</label>
+                                         <div class="slds-form-element">
+                                             <apex:inputField value="{!recordToUpdate.Consignment_ID_Number__c}" label="Consignment ID Number" /> 
+                                         </div> 
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="Price">
+                                         <label class="slds-form-element__label" for="form-element-01">Price</label>
+                                         <div class="slds-form-element">
+                                             <apex:inputField value="{!recordToUpdate.Price__c}" label="Price" /> 
+                                         </div> 
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="FollowUpDate">
+                                         <label class="slds-form-element__label" for="form-element-01">Follow up date</label>
+                                         <div class="slds-form-element">
+                                             <apex:inputField value="{!recordToUpdate.Follow_up_date__c}" label="Follow up date" /> 
+                                         </div> 
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="ConsignmentItemStatus">
+                                         <label class="slds-form-element__label" for="form-element-01">Item status at consignment</label>
+                                         <div class="slds-form-element">
+                                             <apex:inputField onchange="RerenderSoldAndDumpedDetails()" value="{!recordToUpdate.Item_status_at_consignment__c}" label="Item status at consignment" /> 
+                                             <apex:actionFunction name="RerenderSoldAndDumpedDetailsAF" reRender="itemSoldDetails,itemDumpedDetails" />
+                                         </div>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="itemSoldDetails">
+                                          <apex:outputPanel rendered="{!recordToUpdate.Item_status_at_consignment__c=='Sold'}">
+                                              <apex:outputPanel id="RenegadeReceivedCheck">
+                                                  <label class="slds-form-element__label" for="form-element-01">Renegade received check?</label>
+                                                  <div class="slds-form-element">
+                                                      <apex:inputField value="{!recordToUpdate.Renegade_received_check__c}" label="Renegade received check?"/> 
+                                                  </div>
+                                              </apex:outputPanel>
+                                              
+                                              <apex:outputPanel id="CheckDate">
+                                                  <label class="slds-form-element__label" for="form-element-01">Check date</label>
+                                                  <div class="slds-form-element">
+                                                      <apex:inputField value="{!recordToUpdate.Check_date__c}" label="Check date"/> 
+                                                  </div>
+                                              </apex:outputPanel>
+                                              
+                                              <apex:outputPanel id="CheckNumber">
+                                                  <label class="slds-form-element__label" for="form-element-01">Check Number</label>
+                                                  <div class="slds-form-element">
+                                                      <apex:inputField value="{!recordToUpdate.Check_number__c}" label="Check Number"/> 
+                                                  </div>
+                                              </apex:outputPanel>
+                                              
+                                              <apex:outputPanel id="CheckAmount">
+                                                  <label class="slds-form-element__label" for="form-element-01">Check Amount</label>
+                                                  <div class="slds-form-element">
+                                                      <apex:inputField value="{!recordToUpdate.Check_amount__c}" label="Check Amount"/> 
+                                                  </div>
+                                              </apex:outputPanel>
+                                          </apex:outputPanel>
+                                      </apex:outputPanel>
+                                      
+                                      <apex:outputPanel id="itemDumpedDetails">
+                                          <apex:outputPanel rendered="{!recordToUpdate.Item_status_at_consignment__c=='Disposed' || recordToUpdate.Item_status_at_consignment__c=='Donated'}">
+                                              <label class="slds-form-element__label" for="form-element-01">Reason for Disposed/Donated</label>
+                                              <div class="slds-form-element">
+                                                  <apex:inputField value="{!recordToUpdate.Reason_for_Disposed_Donated__c}" label="Reason for Disposed/Donated"/> 
+                                              </div>
+                                          </apex:outputPanel>
+                                      </apex:outputPanel>
+                                  </apex:outputPanel>
+                              </apex:outputPanel>
+                          
+                          </div>
+                          <footer class="slds-modal__footer">
+                              <apex:commandButton status="sts" value="Cancel" styleClass="slds-button slds-button_neutral" action="{!cancel}" reRender="" />
+                            <apex:commandButton status="sts" value="Save" styleClass="slds-button slds-button_brand" action="{!updateLineItems}" oncomplete="hideModal()" reRender="" />
+                          </footer>
+                        </div>
+                      </section>
+                      <div class="slds-backdrop slds-backdrop_open"></div>
+                    </div>
+            
+        </apex:form>
+    </div>
+    <script>
+        function selectAllCheckboxes(elem){
+            var inputs = document.getElementsByTagName("input");
+            if(elem.checked){
+                for (var i = 0; i < inputs.length; i++){
+                    var input = inputs.item(i);
+                    if (input.type == "checkbox") {
+                        input.checked = "checked";
+                    }
+                }
+             }
+             else{
+                 for (var i = 0; i < inputs.length; i++){
+                     var input = inputs.item(i);
+                     if (input.type == "checkbox"){
+                         input.checked = "";
+                     }
+                 }
+             }
+        }
+    
+        function showModal(){
+            var noItemSelected=true;
+            var inputs = document.getElementsByTagName("input");
+            
+            for (var i = 0; i < inputs.length; i++){
+                var input = inputs.item(i);
+                if(input.type == "checkbox"){
+                	console.log(i);
+                    console.log(input.checked);
+                	
+                }
+                if (input.type == "checkbox" && input.checked){
+                    noItemSelected=false;
+                }
+             }
+            
+            if(noItemSelected === false){ 
+                var modal =  document.getElementById("ModalContainer");
+                var form = document.getElementsByClassName("formId")[0];
+                form.classList.add("hiddenPage");
+                modal.style.display = "block";
+            }
+            
+            return false;
+        }
+        function hideModal(){
+            var modal =  document.getElementById("ModalContainer");
+            modal.style.display = "none";
+            var form = document.getElementsByClassName("formId")[0];
+            form.classList.remove("hiddenPage");
+            return false;
+        }
+    	
+    	function updateShipmentLineItemStatus(checkbox){
+            
+            //if(checkbox.checked)
+            	updateShipmentLineItemStatusAF();
+            
+            return false;
+        }
+    
+        function RerenderConsignmentDetails(){
+            RerenderConsignmentDetailsSectionsAF();
+            return false;
+        }
+        function RerenderItemPopularity(){
+            RerenderItemPopularityAF();
+            return false;
+        }
+        function RerenderReimbursementAmount(){
+            RerenderReimbursementAmountAF();
+            return false;
+        }
+        function RerenderMethodOfTransportAndScheduledDate(){
+            RerenderMethodOfTransportandScheduledDateAF();
+            return false;
+        }
+        function RerenderSoldAndDumpedDetails(){
+            RerenderSoldAndDumpedDetailsAF();
+            return false;
+        }
+    </script>
+    
+</apex:page>

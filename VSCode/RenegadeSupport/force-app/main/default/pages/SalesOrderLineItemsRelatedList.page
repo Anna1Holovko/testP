@@ -1,0 +1,105 @@
+<apex:page standardController="Sales_Order__c" extensions="salesOrderelatedlistController" sidebar="false" showHeader="false">
+    <apex:form id="formId">
+        <apex:variable value="{$CurrentPage.URL}123" var="url" id="urlID"/>
+        <style>
+            .sfdc_richtext img {
+            border: 0;
+            width: 70px !important;
+            height: 45px !important;
+            }
+            .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+            margin: 0;
+            }
+            .bPageBlock .detailList .dataCol {
+            width: 0 !important;
+            }
+            .bPageBlock .detailList .labelCol {
+            width: 0 !important;
+            }
+            .bPageBlock .labelCol{
+            padding-right: 0px !important;
+            padding-left: 0px !important;
+            }
+            .bPageBlock .dataCol {
+            padding-right: 0px !important;
+            padding-left: 5px;
+            }
+            .price_fields{
+            padding-right: 5px !important;white-space: nowrap !important;text-align: right !important;
+            }
+            .price_fields>th{text-align: right !important;}
+            .apexp .bPageBlock.apexDefaultPageBlock .pbHeader>table{height: 42px !important;}
+            .pageblocktable_colHeadr{text-align:center;}
+        </style>
+        <apex:outputPanel id="scriptPanelId">
+            <script type="text/javascript">
+            function isCheck(elem)
+            {
+                debugger;                
+                var onClicked = elem;
+                if(onClicked == true) 
+                {
+                    var orderStatus = '{!Sales_Order__c.Order_Status__c}';
+                    if(orderStatus == 'Held for Custom Price Approval' || orderStatus == 'Fraud Detected' || orderStatus == 'Draft') 
+                    {
+                        alert('Sorry you cannot create Purchase Order, Please Check Sales Order Status.');
+                    }
+                    else 
+                    {
+                        onChange(); 
+                    }
+                }
+                else if(onClicked == false) 
+                {
+                    onChange();
+                }
+            }
+            
+            function openNewWindow() {
+                window.top.location.href = 'poInitiationpage';
+            }
+            </script>
+        </apex:outputPanel>
+        <apex:pageBlock >
+            <apex:outputpanel >
+                <apex:actionstatus id="message">
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading" style="background-color: #DCD6D6;height:100%;opacity:0.65;width:100%;position:fixed;"> 
+                            <div class="waitingHolder" style="top:120.2px; width: 91px;">
+                                <img class="waitingImage" src="{!$Resource.loading}" title="Please Wait..." />
+                                <span class="waitingDescription">Loading...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>
+            </apex:outputpanel>
+            
+            <apex:outputPanel id="buttonPannelId">
+                <apex:outputPanel rendered="{!if((selectedOrderwrapper == null || selectedOrderwrapper.size == 0),false,true)}">
+                    <div id="btn" style="width:100%;float:left;height:27px;border-bottom: 1px solid #dbdbdb;padding: 12px 0px;">
+                        <center> 
+                            <apex:commandLink action="{!submitOnChange}" target="_blank" style="position:fixed;text-decoration:none;margin-left: -77px;" rendered="{!if((selectedOrderwrapper == null || selectedOrderwrapper.size == 0),false,true)}">
+                                <apex:commandButton value="New Purchase Order"/>
+                            </apex:commandLink>
+                        </center>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel> 
+            
+        <apex:actionFunction name="onChange" action="{!onChange}" reRender="message,pageMsgId,scriptPanelId,buttonPannelId,btn" status="message"/>
+            <div style="height:410px;overflow-y:scroll;width:100%;float:left;">
+                <apex:pageMessages id="pageMsgId" ></apex:pageMessages>
+                
+                <c:SalesOrderLineItemsRelatedListComponent SO_Obj="{!SO_Obj}" soRelatedList="{!soRelatedList}" isBunbleExist="{!isBunbleExist}" isCancelledTable="false"></c:SalesOrderLineItemsRelatedListComponent>
+                <apex:outputPanel rendered="{!cancelledItemsCount > 0}">
+                    <h2>
+                        Cancelled items:
+                    </h2>
+                    <c:SalesOrderLineItemsRelatedListComponent soRelatedList="{!soRelatedCancelledList}" isBunbleExist="{!isBunbleExist}" isCancelledTable="true"></c:SalesOrderLineItemsRelatedListComponent>
+                </apex:outputPanel>
+                
+                
+            </div>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

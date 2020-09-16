@@ -1,0 +1,95 @@
+<aura:component controller="CustomLookupController">
+  <aura:attribute access="global" name="defaultId" type="String" />
+  <aura:attribute access="global" name="showError" type="Boolean" default="false"/>
+  <aura:attribute access="global" name="errorMessage" type="String"/>
+  <aura:attribute access="global" name="chosenId" type="String" />
+  <aura:attribute access="global" name="filterValue" type="String" />
+  <aura:attribute access="global" name="inputValue" type="String" />
+  <aura:attribute access="global" name="inputLabel" type="String" />
+  <aura:attribute access="global" name="sObjectName" type="String" />
+  <aura:attribute access="global" name="filterFieldName" type="String" />
+  <aura:attribute access="global" name="isComboOpen" type="Boolean" default="false" />
+  <aura:attribute access="global" name="inputName" type="String" />
+  <aura:attribute access="global" name="lookupLabel" type="String" />
+  <!-- <aura:attribute access="global" name="inputName" type="String" /> -->
+  
+  <aura:attribute name="timer" type="Object" />
+
+  <aura:attribute
+    name="sObjectList"
+    type="List"
+    default="[{Id: null, Name: 'None'}]"
+  />
+
+  <aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+
+  <div class="lookup-wrap slds-p-horizontal_small">
+    
+      <div class="{! 'slds-backdrop' + if(v.isComboOpen, ' slds-backdrop_open', '')}" 
+        onclick="{!c.closeCombo}"></div>
+
+    <div class="slds-form-element">
+      <label class="slds-form-element__label">{!v.lookupLabel}</label>
+      <div class="slds-form-element__control">
+        <div class="slds-combobox_container">
+          <div role="combobox"
+            class="{! 'slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click' + if(v.isComboOpen, ' slds-is-open', '')}"
+            aria-expanded="{!v.isComboOpen}"
+            aria-haspopup="listbox">
+            <div role="none"
+              class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right">
+              <!-- {! '' + if(v.inputStyle!=null, v.inputStyle, '')  -->
+              <input type="text"
+                class="{! 'slds-input slds-combobox__input slds-has-focus ' + if( v.showError, ' error-show ', '')}"
+                id="input"
+                aria-controls="input"
+                autocomplete="new-password"
+                role="textbox"
+                value="{!v.inputLabel}"
+                onfocus="{!c.openCombo}"
+                placeholder="{!'Choose ' + v.lookupLabel}"
+                readonly="readonly" />
+              <lightning:icon size="x-small"
+                iconName="utility:search"
+                class="slds-input__icon slds-input__icon_right"
+                alternativeText="search" />
+            </div>
+            <div id="matchList"
+              class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid"
+              role="listbox">
+              <ul class="slds-listbox slds-listbox_vertical"
+                role="presentation">
+                <li role="presentation" class="slds-listbox__item filter-item">
+                  <input
+                    class="slds-input label-hidden"
+                    type="text"
+                    variant="label-hidden"
+                    placeholder="Filter options..."
+                    autocomplete="new-password"
+                    value="{!v.filterValue}"
+                    oninput="{!c.searchRecords}"/>
+                </li>
+                <aura:iteration items="{!v.sObjectList}" var="option">
+                  <li role="presentation" class="{! 'slds-listbox__item' + if(option.Id == v.chosenId,' slds-is-selected','')}"
+                    data-id="{!option.Id}"
+                    data-name="{!option.Name}"
+                    onclick="{!c.handleOptionSelect}">
+                    <div role="option"
+                      class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small no-click">
+                      <span class="slds-media__body">
+                        <span class="slds-truncate" title="{!option.Name}">
+                          {!option.Name}
+                        </span>
+                      </span>
+                    </div>
+                  </li>
+                </aura:iteration>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</aura:component>

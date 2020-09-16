@@ -1,0 +1,66 @@
+<apex:component >
+    <apex:attribute name="street" type="String" description=""/>
+    <apex:attribute name="city" type="String" description=""/>
+    <apex:attribute name="state" type="String" description=""/>
+    <apex:attribute name="code" type="String" description=""/>
+    <apex:attribute name="to" type="String" description=""/>
+    <apex:attribute name="lat" type="Decimal" description=""/>
+    <apex:attribute name="long" type="Decimal" description=""/>
+    
+    <script type="text/javascript" src="/soap/ajax/45.0/connection.js"></script>
+    <script type="text/javascript"> 
+        
+        $(document).ready(function() {
+        
+        var myOptions = {
+            zoom: 15,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeControl: false,
+            scrollwheel: false 
+        }
+        
+        var map;
+        var marker;
+        var lat = "{!lat}";
+        var long = "{!long}";
+        
+        var infowindow = new google.maps.InfoWindow({
+            content: "<b>{!to}</b></br>{!street}</br>{!city}</br>{!state}</br>{!code}</br>"
+        });
+        console.log("lat: " + lat);
+        mapFill();
+        
+        function mapFill(){
+            var myLatLng = {lat: Number(lat), lng: Number(long)};
+            map = new google.maps.Map(document.getElementById("map"), myOptions);
+            map.setCenter(myLatLng);
+            
+            marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+                title: "{!to}" 
+            });
+            
+            google.maps.event.addListener(marker, 'click', function() {
+                infowindow.open(map,marker);
+            });
+            google.maps.event.addListener(infowindow, 'closeclick', function() {
+                map.setCenter(marker.getPosition()); 
+            });
+        }       
+        
+        function resizeIframe() {
+            var me = window.name;
+            if (me) {
+                var iframes = parent.document.getElementsByName(me);
+                if (iframes && iframes.length == 1) {
+                    height = document.body.offsetHeight;
+                    iframes[0].style.height = height + "px";
+                }  
+            }
+        }
+    });
+    </script>
+    
+    <div id="map"></div> 
+</apex:component>

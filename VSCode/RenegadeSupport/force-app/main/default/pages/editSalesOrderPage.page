@@ -1,0 +1,2590 @@
+<apex:page standardController="Sales_Order__c" extensions="editSalesOrderController" action="{!isSOModified}" showHeader="false"
+    sidebar="false">
+    <!--apex:includeScript value="https://code.jquery.com/jquery-1.11.3.min.js"/-->
+    <apex:includeScript value="{!$Resource.jquery1113minjs}" />
+    <apex:includeScript value="{!$Resource.shCorejs}" />
+    <apex:includeScript value="{!$Resource.jquerydataTablesjs}" />
+    <apex:includeScript value="{!$Resource.demojs}" />
+    <apex:includeScript value="{!$Resource.dataTableresponsivemin}" />
+    <apex:includeScript value="{!$Resource.dataTableresponsive}" />
+
+    <apex:stylesheet value="{!URLFOR($Resource.democss)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.shCorecss)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.responsivedataTablescss)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.jquerydataTablescss)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.renegade_stylesheet)}" />
+    <apex:form id="formId">
+        <html>
+
+        <head>
+            <title>Renegade Manual Order Page</title>
+
+            <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" />
+            <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/plug-ins/a5734b29083/integration/bootstrap/3/dataTables.bootstrap.css"
+            />
+
+            <apex:outputPanel id="javaScriptPanel">
+                <apex:outputPanel id="innerjavaScriptPanel">
+                    <script type="text/javascript" class="init">  
+                        window.onbeforeunload = function (e) {
+                            return "Are you sure you want to leave?";
+                        };
+
+                        window.onload = function () {
+                            // Add event listener for all input tags that have a class of inputtypes
+                            var inputtexts = document.querySelectorAll('input.restrictenterkey');
+                            for (var i = 0; i < inputtexts.length; i++) {
+                                // click calls weenisFunction
+                                inputtexts[i].addEventListener("keypress", function (event) {
+                                    if (event.keyCode == 13) {
+                                        event.preventDefault();
+                                    }
+                                });
+                            }
+
+                            $(".chqClas").hide();
+                            $(document).ready(function () {
+                                $('#example').DataTable({
+                                    responsive: {
+                                        details: {
+                                            renderer: function (api, rowIdx) {
+                                                // Select hidden columns for the given row
+                                                var data = api.cells(rowIdx, ':hidden').eq(0).map(function (cell) {
+                                                    var header = $(api.column(cell.column).header());
+                                                    return '<tr>' +
+                                                        '<td>' +
+                                                        header.text() +
+                                                        '</td> ' +
+                                                        '<td>' +
+                                                        api.cell(cell).data() +
+                                                        '</td>' +
+                                                        '</tr>';
+
+                                                }).toArray().join('');
+
+                                                var bundlevar = data.includes('BI-');
+                                                if (bundlevar == true) {
+                                                    return data ?
+                                                        $('<table/>').append(data) :
+                                                        false;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    paging: false,
+                                    retrieve: true,
+                                    "ordering": true,
+                                    "info": false
+                                });
+
+
+                                $(".num").on("change", function (e) {
+                                    var letters = /[^a-zA-Z0-9]/;
+
+                                    if (this.value.match(letters)) {
+                                        this.value = '';
+                                        alert('Please enter valid Account Number');
+                                    }
+
+                                });
+                                // Account number validation                            
+                                $(".rnum").on("change", function (e) {
+                                    var letters1 = /^[0-9]{9}$/;
+                                    var letters = /^(.)*[A-Za-z]+(.)*$/;
+
+                                    if (this.value.match(letters)) {
+                                        this.value = '';
+                                        alert('Routing Number does not include alphabets');
+                                    }
+                                    if (!this.value.match(letters1) && this.value != '') {
+                                        this.value = '';
+                                        alert('Enter valid Routing Number(9)');
+                                    }
+                                });
+                            });
+
+                            /***************** Set Payment Info ******************/
+                            //alert("{!paymentType}");
+                            if ("{!paymentType}" != null && "{!paymentType}" != '') {
+                                show("{!paymentType}", 1);
+                            }
+                            /***************** Set Payment Info ******************/
+                        }
+
+                        function clearCardDetails(cardtype, cardNumber, cvv, expMnth, expYear) {
+                            //alert(document.getElementById(cardtype).value);
+                            //alert(document.getElementById(cardtype).defaultValue);
+
+                            if (document.getElementById(cardtype).value != document.getElementById(cardtype).defaultValue) {
+                                //alert(document.getElementById(cardtype).value);
+                                document.getElementById(cardtype).defaultValue = document.getElementById(cardtype).value;
+                                document.getElementById(cardNumber).value = '';
+                                document.getElementById(cvv).value = '';
+                                document.getElementById(expMnth).value = '';
+                                document.getElementById(expYear).value = '';
+                            }
+                        }
+
+                        function applyTax() {
+                            taxcalculation();
+                        }
+                        function checkLuhn(input) {
+                            var sum = 0;
+                            var numdigits = input.length;
+                            var parity = numdigits % 2;
+                            for (var i = 0; i < numdigits; i++) {
+                                var digit = parseInt(input.charAt(i))
+                                if (i % 2 == parity) digit *= 2;
+                                if (digit > 9) digit -= 9;
+                                sum += digit;
+                            }
+                            return (sum % 10) == 0;
+                        }
+
+                        function validateAccountName(accname) {
+
+                            var AccountName = document.getElementById(accname).value;
+                            var reg = new RegExp('^[a-zA-Z]+$');
+
+                            if (AccountName == '') {
+                                alert('Please enter a valid Account Name');
+                                document.getElementById(accname).value = '';
+                            }
+
+                        }
+
+                        function validatecard(input) {
+                            if (!checkLuhn(input)) {
+                                alert('Sorry, that is not a valid number - please try again!');
+                                show(t, rno);
+                            }
+                        }
+                        function addressCopy(b01, b0, b1, b2, b3, b4, b5, s00, s01, s0, s1, s2, s3, s4, s5) {
+                            // Copy billing fields to shipping fields
+
+                            console.log('b5 ' + b5);
+                            console.log('s5 ' + s5);
+                            console.log('document.getElementById(b4).value = ' + document.getElementById(b4).value);
+                            console.log('document.getElementById(s4).value = ' + document.getElementById(s4).value);
+                            document.getElementById(s01).value = document.getElementById(b01).value;
+                            document.getElementById(s0).value = document.getElementById(b0).value;
+                            document.getElementById(s1).value = document.getElementById(b1).value;
+                            document.getElementById(s2).value = document.getElementById(b2).value;
+                            document.getElementById(s3).value = document.getElementById(b3).value;
+                            document.getElementById(s4).value = document.getElementById(b4).value;
+                            document.getElementById(s5).value = document.getElementById(b5).value;
+                            // No form submission
+                            taxcalculation();
+
+                            return false;
+                        }
+
+                        function Addproduct(param) {
+                            alert(param);
+                        }
+
+                        /******** Payment section javascript code ***********/
+                        function goToDetailPage() {
+                            show(t, rno);
+                        }
+
+                        function show(t, rno) {
+                            focussectionp1();
+                            if ($(t).val() != "ManualPay") {
+                                customprice();
+                            }
+
+                            if ($(t).val() == "ManualPay") {
+
+                                $('[id$="PTManual' + rno + '"]').show();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+
+                            } else if ($(t).val() == "Cardknox") {
+
+                                $('[id$="Cardknox' + rno + '"]').show();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+
+                            } else if ($(t).val() == "Zibby by Affirm") {
+                                $('[id$="Zibby' + rno + '"]').show();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                
+                            }
+                            else if ($(t).val() == "CreditCard") {
+
+                                $('[id$="Credit' + rno + '"]').show();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                            }
+                            else if ($(t).val() == "Paybycheck") {
+
+                                $('[id$="PTCheque' + rno + '"]').show();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                                //focusSection1();
+                            }
+                            else if ($(t).val() == "PaypalInvoice") {
+
+                                $('[id$="Paypal' + rno + '"]').show();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                            }
+                            else if ($(t).val() == "AmazonPay") {
+
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').hide();
+                                $('[id$="amazon' + rno + '"]').show();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                            }
+                            else if ($(t).val() == "AffirmPay") {
+
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="affirm' + rno + '"]').show();
+                                $('[id$="amazon' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                            }
+                            else {
+                                //focusSection1();
+                                $('[id$="Credit' + rno + '"]').hide();
+                                $('[id$="PTCheque' + rno + '"]').hide();
+                                $('[id$="PTManual' + rno + '"]').hide();
+                                $('[id$="Paypal' + rno + '"]').hide();
+                                $('[id$="Cardknox' + rno + '"]').hide();
+                                $('[id$="Zibby' + rno + '"]').hide();
+                            }
+                        }
+
+                        $(document).ready(function () {
+                            $(function () {
+                                $("[id$=input11]").prop("disabled", true);
+                                $("[id$=input12]").prop("disabled", true);
+                                $("[id$=input13]").prop("disabled", true);
+                                $("[id$=input14]").prop("disabled", true);
+                                $("[id$=input15]").prop("disabled", true);
+                                $("[id$=amountid]").prop("disabled", true);
+                                $("[id$=input21]").prop("disabled", true);
+                                $("[id$=input22]").prop("disabled", true);
+                                $("[id$=input23]").prop("disabled", true);
+                                $("[id$=input24]").prop("disabled", true);
+                                $("[id$=input25]").prop("disabled", true);
+                                $("[id$=input26]").prop("disabled", true);
+                                $("[id$=input31]").prop("disabled", true);
+                                $("[id$=input32]").prop("disabled", true);
+                                $("[id$=input33]").prop("disabled", true);
+                                $("[id$=input34]").prop("disabled", true);
+                                $("[id$=input35]").prop("disabled", true);
+                                $("[id$=input36]").prop("disabled", true);
+                            });
+                        });
+
+                        function enable11234(amtid, inputvalueId, inputva, inputamt) {
+
+                            var amountid = document.getElementById(amtid).value;
+                            var payAmt = document.getElementById(inputamt).innerHTML;
+                            var grandtotalid = payAmt.replace("$", ""); //document.getElementById(inputvalueId).value;  
+                            console.log(payAmt.replace("$", ""));
+                            console.log(grandtotalid);
+                            if (inputva == true) {
+                                $("[id$=input11]").prop("disabled", false);
+                                $("[id$=input12]").prop("disabled", false);
+                                $("[id$=input13]").prop("disabled", false);
+                                $("[id$=input14]").prop("disabled", false);
+                                $("[id$=input15]").prop("disabled", false);
+                                $("[id$=amountid]").prop("disabled", false);
+                                if (grandtotalid == 0) {
+                                    document.getElementById(amtid).value = '0.00';
+                                }
+                                else
+                                    document.getElementById(amtid).value = grandtotalid;
+
+                            }
+                            else {
+                                $("[id$=input11]").prop("disabled", true);
+                                $("[id$=input12]").prop("disabled", true);
+                                $("[id$=input13]").prop("disabled", true);
+                                $("[id$=input14]").prop("disabled", true);
+                                $("[id$=input15]").prop("disabled", true);
+                                $("[id$=amountid]").prop("disabled", true);
+
+                                $("[id$=input11]").val(" ");
+                                $("[id$=input12]").val(" ");
+                                $("[id$=input13]").val(" ");
+                                $("[id$=input14]").val(" ");
+                                $("[id$=input15]").val(" ");
+                                $("[id$=amountid]").val(" ");
+
+                                document.getElementById(amtid).value = '0.00';
+                            }
+                        }
+
+                        function enable4(amtid, inputvalueId, inputva) {
+
+                            var amountid = document.getElementById(amtid).value;
+                            var grandtotalid = inputvalueId;
+
+                            if (inputva == true) {
+                                $("[id$=amountidE]").prop("disabled", false);
+                                if (grandtotalid == 0) {
+                                    document.getElementById(amtid).value = '0.00';
+                                }
+                                else
+                                    document.getElementById(amtid).value = grandtotalid;
+
+                            }
+                            else {
+                                $("[id$=amountidE]").prop("disabled", true);
+                                document.getElementById(amtid).value = '0.00';
+                            }
+                        }
+                        function enable1(amtid, inputvalueId, inputva) {
+
+                            var amountid = document.getElementById(amtid).value;
+                            var grandtotalid = inputvalueId;
+
+                            if (inputva == true) {
+                                $("[id$=input11]").prop("disabled", false);
+                                $("[id$=input12]").prop("disabled", false);
+                                $("[id$=input13]").prop("disabled", false);
+                                $("[id$=input14]").prop("disabled", false);
+                                $("[id$=input15]").prop("disabled", false);
+                                $("[id$=amountid]").prop("disabled", false);
+                                if (grandtotalid == 0) {
+                                    document.getElementById(amtid).value = '0.00';
+                                }
+                                else
+                                    document.getElementById(amtid).value = grandtotalid;
+
+                            }
+                            else {
+                                $("[id$=input11]").prop("disabled", true);
+                                $("[id$=input12]").prop("disabled", true);
+                                $("[id$=input13]").prop("disabled", true);
+                                $("[id$=input14]").prop("disabled", true);
+                                $("[id$=input15]").prop("disabled", true);
+                                $("[id$=amountid]").prop("disabled", true);
+
+                                $("[id$=input11]").val(" ");
+                                $("[id$=input12]").val(" ");
+                                $("[id$=input13]").val(" ");
+                                $("[id$=input14]").val(" ");
+                                $("[id$=input15]").val(" ");
+                                $("[id$=amountid]").val(" ");
+
+                                document.getElementById(amtid).value = '0.00';
+                            }
+                        }
+
+                        function enable2(inputvalue) {
+                            if (inputvalue == true) {
+                                $("[id$=input21]").prop("disabled", false);
+                                $("[id$=input22]").prop("disabled", false);
+                                $("[id$=input23]").prop("disabled", false);
+                                $("[id$=input24]").prop("disabled", false);
+                                $("[id$=input25]").prop("disabled", false);
+                                $("[id$=input26]").prop("disabled", false);
+                            }
+                            else {
+                                $("[id$=input21]").prop("disabled", true);
+                                $("[id$=input22]").prop("disabled", true);
+                                $("[id$=input23]").prop("disabled", true);
+                                $("[id$=input24]").prop("disabled", true);
+                                $("[id$=input25]").prop("disabled", true);
+                                $("[id$=input26]").prop("disabled", true);
+                                $("[id$=input21]").val(" ");
+                                $("[id$=input22]").val(" ");
+                                $("[id$=input23]").val(" ");
+                                $("[id$=input24]").val(" ");
+                                $("[id$=input25]").val(" ");
+                                $("[id$=input26]").val(" ");
+                            }
+
+                        }
+
+                        function enable3(inputvalue) {
+                            if (inputvalue == true) {
+                                $("[id$=input31]").prop("disabled", false);
+                                $("[id$=input32]").prop("disabled", false);
+                                $("[id$=input33]").prop("disabled", false);
+                                $("[id$=input34]").prop("disabled", false);
+                                $("[id$=input35]").prop("disabled", false);
+                                $("[id$=input36]").prop("disabled", false);
+                            }
+                            else {
+                                $("[id$=input31]").prop("disabled", true);
+                                $("[id$=input32]").prop("disabled", true);
+                                $("[id$=input33]").prop("disabled", true);
+                                $("[id$=input34]").prop("disabled", true);
+                                $("[id$=input35]").prop("disabled", true);
+                                $("[id$=input36]").prop("disabled", true);
+                                $("[id$=input31]").val(" ");
+                                $("[id$=input32]").val(" ");
+                                $("[id$=input33]").val(" ");
+                                $("[id$=input34]").val(" ");
+                                $("[id$=input35]").val(" ");
+                                $("[id$=input36]").val(" ");
+                            }
+
+                        }
+
+                        function validateExpiration(monthId, yearId) {
+                            var yearValue = document.getElementById(yearId).value;
+                            var monthValue = document.getElementById(monthId).value;
+
+                            var currentDate = new Date();
+                            var currentYear = currentDate.getFullYear();
+                            var currentmonth = currentDate.getMonth();
+
+                            if (yearValue < currentYear && yearValue != '') {
+                                alert('Please enter a valid Year.');
+                                document.getElementById(yearId).value = '';
+                            }
+
+                            else if (yearValue == currentYear && monthValue != '') {
+                                var monthData = monthValue.split('-');
+                                monthData = monthData[0] - 1;
+                                if (monthData < currentmonth) {
+                                    alert('Please enter a valid month.');
+                                    document.getElementById(monthId).value = '';
+                                }
+                            }
+                        }
+
+                        function validateQuantity(quanty) {
+                            var quantityfld = document.getElementById(quanty).value;
+                            var reg = new RegExp('^[0-9]*$');
+
+                            if (quantityfld.length >= 4 || !reg.test(quantityfld) || quantityfld == 0 || quantityfld == '') {
+                                alert('Please enter a valid Quantity');
+                                document.getElementById(quanty).value = document.getElementById(quanty).defaultValue;
+                                // document.getElementById(quanty).value ='0';
+                            }
+                        }
+
+                        function validateUpdateQuantity(quanty) {
+                            var quantityfld = document.getElementById(quanty).value;
+                            var reg = new RegExp('^[0-9]*$');
+
+                            if (quantityfld.length >= 4 || !reg.test(quantityfld) || quantityfld == 0 || quantityfld == '') {
+                                alert('Please enter a valid Quantity');
+                                document.getElementById(quanty).value = document.getElementById(quanty).defaultValue;
+                            }
+                        }
+
+                        function validatecvv(cvvnum, cardtype) {
+                            var cvvnumber = document.getElementById(cvvnum).value;
+                            var cardtypevalue = document.getElementById(cardtype).value;
+                            var reg = new RegExp('^[0-9]{3,4}$');
+
+                            if (cvvnumber == '' || !reg.test(cvvnumber)) {
+                                alert('Please enter a valid CVV.');
+                                document.getElementById(cvvnum).value = '';
+                            }
+                            else if (cardtypevalue == '') {
+                                alert('Card Type is required');
+                                document.getElementById(cvvnum).value = '';
+                            }
+                            else {
+                                if (cardtypevalue == 'AE' && cvvnumber.length != 4) {
+                                    alert('CVV must be 4 digits for American Express and 3 digits for other card types.');
+                                    document.getElementById(cvvnum).value = '';
+                                }
+                                else if (cardtypevalue != 'AE' && cvvnumber.length != 3) {
+                                    alert('CVV must be 4 digits for American Express and 3 digits for other card types.');
+                                    document.getElementById(cvvnum).value = '';
+                                }
+                            }
+
+                        }
+
+                        function validatecardnum(cardnum1, cardnum2, cardnum3) {
+                            var cardnumber1 = document.getElementById(cardnum1).value;
+                            var cardnumber2 = document.getElementById(cardnum2).value;
+                            var cardnumber3 = document.getElementById(cardnum3).value;
+
+                            if (cardnumber2 != '') {
+                                if (cardnumber2 == cardnumber1) {
+                                    alert('Card number is already in use.Please enter different card number');
+                                    document.getElementById(cardnum2).value = '';
+                                }
+
+                            }
+                            if (cardnumber3 != '') {
+                                if (cardnumber3 == cardnumber2) {
+                                    alert('Card number is already in use.Please enter different card number');
+                                    document.getElementById(cardnum3).value = '';
+                                }
+                                else if (cardnumber3 == cardnumber1) {
+                                    alert('Card number is already in use.Please enter different card number');
+                                    document.getElementById(cardnum3).value = '';
+                                }
+                            }
+                        }
+
+                        function validateUpdatedQuantity(custprice, quanty, discid, unitpriceid) {
+                            var qunatity = document.getElementById(quanty).value;
+                            var customprice = document.getElementById(custprice).value;
+
+                            var reg = new RegExp('^[0-9]*$');
+
+                            if (qunatity.length >= 4 || !reg.test(qunatity) || qunatity == 0 || qunatity == '') {
+                                alert('Please enter a valid Quantity');
+                                document.getElementById(quanty).value = document.getElementById(quanty).defaultValue;
+                            }
+                            else if (customprice > 0) {
+                                alert('Custom Price restoring to default');
+                                document.getElementById(custprice).value = '';
+                            }
+                        }
+
+                        function validateDiscount(discid) {
+                            var discountid = document.getElementById(discid).value;
+                            var reg = new RegExp('^[0-9]*$');
+
+
+                            if (!reg.test(discountid) && discountid != '') {
+                                if (discountid.indexOf(".") == -1) {
+                                    alert('Please enter Numeric values.');
+                                    document.getElementById(discid).value = '';
+                                    document.getElementById(discid).focus();
+                                }
+                                else {
+                                    var res = discountid.split(".");
+                                    if (res.length > 2) {
+                                        alert('Please enter Numeric values.');
+                                        document.getElementById(discid).value = '';
+                                        document.getElementById(discid).focus();
+                                    }
+                                    else {
+                                        if (!reg.test(res[1])) {
+                                            alert('Please enter Numeric values.');
+                                            document.getElementById(discid).value = '';
+                                            document.getElementById(discid).focus();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        function validatecustomprice(custprice, quantity, discid, unitpriceid) {
+
+                            var customprice = document.getElementById(custprice).value;
+                            //alert(customprice);
+                            var discountid = document.getElementById(discid).value;
+                            //alert(discountid);
+                            var unitprice = document.getElementById(unitpriceid).value;
+                            //alert(unitprice);
+                            var qunatity = document.getElementById(quantity).value;
+                            //alert(qunatity);
+                            //var reg = new RegExp('^[0-9]{1,10}');
+                            var reg = new RegExp('^[0-9]*$');
+                            var subtotal = unitprice * qunatity - discountid;
+
+                            //alert(subtotal);
+
+
+                            if (!reg.test(customprice) && customprice != '') {
+                                if (customprice.indexOf(".") == -1) {
+                                    alert('Please enter Numeric values.');
+                                    document.getElementById(custprice).value = '';
+                                    document.getElementById(custprice).focus();
+                                }
+                                else {
+                                    var res = customprice.split(".");
+                                    if (res.length > 2) {
+                                        alert('Please enter Numeric values.');
+                                        document.getElementById(custprice).value = '';
+                                        document.getElementById(custprice).focus();
+                                    }
+                                    else {
+                                        if (!reg.test(res[1])) {
+                                            alert('Please enter Numeric values.');
+                                            document.getElementById(custprice).value = '';
+                                            document.getElementById(custprice).focus();
+                                        }
+                                    }
+                                }
+                                //alert('Please enter Numeric values.'); 
+                                //document.getElementById(custprice).value ='';
+                            }
+                            else if (customprice >= subtotal) {
+                                alert('Please enter a price less than the Total Price ' + subtotal);
+                                document.getElementById(custprice).value = document.getElementById(custprice).defaultValue;
+                            }
+                        }
+
+                        function removeCustomPrice(custprice) {
+                            var customprice = document.getElementById(custprice).value;
+                            if (customprice > 0) {
+                                alert('Custom Price restoring to default');
+                                document.getElementById(custprice).value = '';
+                            }
+                        }
+
+                        function validateTelephone(validphn) {
+                            var validphone = document.getElementById(validphn).value;
+
+                            var reg = new RegExp('^[0-9]{10}$');
+                            var reg2 = new RegExp('^(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}$');
+                            if (validphone == '' || !reg.test(validphone)) {
+                                if (!reg2.test(validphone)) {
+                                    alert('Please enter a valid Phone number');
+                                    document.getElementById(validphn).value = '';
+                                }
+                            }
+
+                        }
+
+                        function validatecellnumber(validcellno) {
+                            var validcellnumber = document.getElementById(validcellno).value;
+                            var reg = new RegExp('^[0-9]{10}$');
+                            if (validcellnumber == '' || !reg.test(validcellnumber)) {
+                                alert('Please enter a valid Mobile number');
+                                document.getElementById(validcellno).value = '';
+                            }
+
+                        }
+
+                        function validateZipcode(validzip) {
+                            var validzipcode = document.getElementById(validzip).value;
+                            var reg = new RegExp('^[0-9]{5}(-[0-9]{4})$');
+                            var reg1 = new RegExp('^[0-9]{5}$');
+                            if (validzipcode == '' || !reg1.test(validzipcode)) {
+                                if (!reg.test(validzipcode)) {
+                                    alert('Please enter a valid Zipcode.');
+                                    document.getElementById(validzip).value = '';
+                                }
+                            }
+                            else {
+                                taxcalculation();
+                            }
+                        }
+
+                        /******** Payment section javascript code ***********/
+
+                        /*********** Search javascript code ************/
+                        function searchProductsJS(param) {
+                            var sku = document.getElementById('sku').value;
+                            var manufacture = document.getElementById('manufacture').value;
+                            var name = document.getElementById('accName').value;
+                            var res = document.URL.split('?scontrolCaching=1&id=');
+                            var SOID = document.getElementById('SalesorderObject').value;
+                            //alert(SOID);
+                            if (sku != null || manufacture != null || name != null) {
+
+                                editSalesOrderController.searchProducts(sku, name, manufacture, SOID,
+                                    function (result, event) {
+                                        if (event.status) {
+                                            if (result == '[]') {
+                                                if (param == 1) {
+                                                    alert('No Products found');
+                                                }
+                                            }
+                                            else {
+                                                renderProducts(result);
+                                            }
+                                        }
+                                        else if (event.type === 'exception') {
+                                            alert(event.message);
+                                            document.getElementById("errors-js").innerHTML = event.message;
+                                        } else {
+                                            alert(event.message);
+                                            document.getElementById("errors-js").innerHTML = event.message;
+                                        }
+                                    }, { escape: true });
+                            }
+                        }
+
+                        function getPrevProductsJS() {
+                            var firstPayapalIdval = document.getElementById('firstPayapalId').value;
+                            var query = document.getElementById('storedquery').value;
+                            //var SOID = document.URL.split('?scontrolCaching=1&id='); 
+
+                            var SOID = document.getElementById('SalesorderObject').value;
+                            editSalesOrderController.getPrevProducts(firstPayapalIdval, query, SOID,
+                                function (result, event) {
+                                    if (event.status) {
+                                        if (result == '[]') {
+                                            alert('No Products found');
+                                        }
+                                        else {
+                                            renderProducts(result);
+                                        }
+                                    }
+                                    else if (event.type === 'exception') {
+                                        document.getElementById("errors-js").innerHTML = event.message;
+                                    } else {
+                                        document.getElementById("errors-js").innerHTML = event.message;
+                                    }
+                                }, { escape: true });
+                        }
+
+                        function getNextProductsJS() {
+                            var lastPayapalIdval = document.getElementById('lastPayapalId').value;
+                            var query = document.getElementById('storedquery').value;
+                            //var SOID = document.URL.split('?scontrolCaching=1&id=');
+                            var SOID = document.getElementById('SalesorderObject').value;
+                            editSalesOrderController.getNextProducts(lastPayapalIdval, query, SOID,
+                                function (result, event) {
+                                    if (event.status) {
+                                        if (result == '[]') {
+                                            alert('No Products found');
+                                        }
+                                        else {
+                                            renderProducts(result);
+                                        }
+                                    }
+                                    else if (event.type === 'exception') {
+                                        document.getElementById("errors-js").innerHTML = event.message;
+                                    } else {
+                                        document.getElementById("errors-js").innerHTML = event.message;
+                                    }
+                                }, { escape: true });
+                        }
+                        /*********** Search javascript code ************/
+
+                        /*************** Search Button Enter Functionality *********/
+                        function uniKeyCode(event) {
+                            if (event.keyCode == 13) {
+                                //   alert('event.keyCode is ----'+event.keyCode);
+                                console.log(event);
+                                event.preventDefault();
+                                searchProductsJS(1);
+                                return false;
+                            }
+                        }
+                        /*************** Search Button Enter Functionality *********/
+
+                        /************ Focus Section *******************/
+                        function autofocusSection(recordType, configOption, isBundleExist, isCheck, checkId) {
+                            if (isCheck) {
+                                if (recordType == 'Configurable' && configOption == '') {
+                                    alert('No Options Found');
+                                    document.getElementById(checkId.id).checked = false;
+                                    //document.getElementById('j_id0:formId:products:0:qty').value = '0';
+                                }
+                                if (recordType == 'Bundled') {
+                                    if (isBundleExist == 'false') {
+                                        document.getElementById(checkId.id).checked = false;
+                                    }
+                                }
+                            }
+                            document.getElementById("mytext1").focus();
+                        }
+
+
+                        function focussectionp1() {
+                            document.getElementById("mytextp1").focus();
+                        }
+                        function focusSection() {
+                            document.getElementById("mytext").focus();
+                        }
+                        function focusSection1() {
+                            document.getElementById("mytext1").focus();
+                        }
+                        function focusSection2() {
+                            document.getElementById("mytext2").focus();
+                        }
+                        function focusSection3() {
+                            document.getElementById("mytext3").focus();
+                        }
+                        function focusSection4() {
+                            document.getElementById("mytext4").focus();
+                        }
+
+                        function focusSection7() {
+                            document.getElementById("mytext7").focus();
+                        }
+                        function focusSection8() {
+                            document.getElementById("mytext8").focus();
+                            window.onbeforeunload = null;
+                        }
+
+                        document.getElementById('Submitorderbtn').onclick = function () {
+                            window.onbeforeunload = null;
+                        };
+
+                        /***************** focus Section ******************/
+                        /***************** Page Redirection ******************/
+
+                        function getSOID() {
+                            return {!SOID
+                        };
+                        }
+
+
+                        function goToHomePage() {
+                            window.location = '/home/home.jsp';
+                        }
+
+
+                        function validateAddress(pb0, pb1, pb2, pb3, pb4, ps0, ps1, ps2, ps3, ps4) {
+                            if ((document.getElementById(pb0).value == '') || (document.getElementById(pb1).value == '') || (document.getElementById(pb2).value == '') || (document.getElementById(pb3).value == '') || (document.getElementById(pb4).value == '')) {
+                                alert('Please enter Complete Billing address to save the Customer Details');
+                            }
+                            else if ((document.getElementById(ps0).value == '') || (document.getElementById(ps1).value == '') || (document.getElementById(ps2).value == '') || (document.getElementById(ps3).value == '') || (document.getElementById(ps4).value == '')) {
+                                alert('Please enter Complete Shipping address to save the Customer Details');
+
+                            }
+                            return false;
+                        }
+
+                        /***************** Page Redirection ******************/
+
+                        function validateAndSave() {
+                            //address validation
+                            if (!validateAddressBeforeSave()) {
+                                return;
+                            }
+
+                            //phoneValidation
+                            var billingPhone = $("[id$=\\:b4]")[0].value;
+                            var shippingPhone = $("[id$=\\:s4]")[0].value;
+
+                            var billingCell = $("[id$=\\:b5]")[0].value;
+                            console.log('billingPhone = ' + billingPhone);
+                            console.log('billingCell = ' + billingCell);
+                            var shippingCell = $("[id$=\\:s5]")[0].value;
+                            if (!isPhoneValid(billingPhone, 'phone')) {
+                                alert('Please enter a valid billing Phone number.');
+                                return;
+                            }
+
+                            if (!isPhoneValid(shippingPhone, 'phone')) {
+                                alert('Please enter a valid shipping Phone number.');
+                                return;
+                            }
+
+                            if (!isPhoneValid(billingCell, 'mobile')) {
+                                alert('Please enter a valid billing Cell number.');
+                                return;
+                            }
+
+                            if (!isPhoneValid(shippingCell, 'mobile')) {
+                                alert('Please enter a valid shipping Cell number.');
+                                return;
+                            }
+                            //if(validateAddressBeforeSave()){
+                            saveAndContinueJS();
+                            //}
+                        }
+
+                        function isPhoneValid(phone, type) {
+                            var regExp = null;
+                            //if(type == 'mobile'){
+                            //    regExp = new RegExp('^[0-9]{10}$');
+                            //}else{
+                            regExp = new RegExp('^[(]{0,1}[0-9]{3}[)]{0,1}[- \s \.]{0,1}[0-9]{3}[- \s \.]{0,1}[0-9]{4}$');
+                            //}
+
+                            if (!phone || regExp.test(phone)) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        }
+
+                        function validateAddressBeforeSave() {
+
+                            if (($("[id$=\\:b0]")[0].value == '') || ($("[id$=\\:b1]")[0].value == '') || ($("[id$=\\:b2]")[0].value == '') || ($("[id$=\\:b3]")[0].value == '') || ($("[id$=\\:b4]")[0].value == '')) {
+                                alert('Please enter Complete Billing address to save the Customer Details');
+                                return false;
+                            }
+                            else if (($("[id$=\\:s0]")[0].value == '') || ($("[id$=\\:s1]")[0].value == '') || ($("[id$=\\:s2]")[0].value == '') || ($("[id$=\\:s3]")[0].value == '') || ($("[id$=\\:s4]")[0].value == '')) {
+                                alert('Please enter Complete Shipping address to save the Customer Details');
+                                return false;
+
+                            }
+                            return true;
+                        }
+                    </script>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <style type="text/css">
+                .dataTables_filter {
+                    display: none;
+                }
+
+                table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before,
+                table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
+                    display: none !important;
+                }
+
+                <!--popup style sheets -->.popupBackground {
+                    overflow: auto;
+                    background-color: black;
+                    opacity: 0.7;
+                    filter: alpha(opacity=20);
+                    position: fixed;
+                    width: 100%;
+                    height: 191%;
+                    top: 0%;
+                    left: 0%;
+                    z-index: 1001;
+                }
+
+                .custPopup {
+                    background-color: white;
+                    z-index: 9999;
+                    position: fixed;
+                    margin-left: -250px;
+                    border-radius: 8px;
+                    width: 515px;
+                    margin-left: -202px;
+                    top: 25%;
+                    left: 40%;
+                }
+
+                <!--end popup style sheets -->div.container {
+                    max-width: 1550px !important;
+                    margin: 0 auto;
+                }
+
+                .content_container {
+                    width: 100% !important;
+                    font-size: 12px;
+                    white-space: normal;
+                }
+
+                .bPageBlock {
+                    border-top: 0px !important;
+                }
+
+                body .bPageBlock,
+                body .secondaryPalette.bPageBlock {
+                    background: none !important;
+                    background-color: none !important;
+                    border-bottom: none !important;
+                    border-left: none !important;
+                    border-right: none !important;
+                    -webkit-border-radius: none !important;
+                    border-radius: none !important;
+                }
+
+                body .btn {
+                    background: #69c5ec !important;
+                    outline: 0 !important;
+                }
+
+                .bPageBlock .message {
+                    color: #a94442 !important;
+                    background-color: #f2dede !important;
+                    padding: 9px !important;
+                    border: 1px solid #ebccd1 !important;
+                    border-radius: 4px !important;
+                    width: 54% !important;
+                    margin-bottom: 20px !important;
+                }
+
+                .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+                    margin: 0 !important;
+                }
+
+                .col-md-6 {
+                    padding-right: 0px !important;
+                    padding-left: 0px !important;
+                }
+
+                div.container {
+                    max-width: 1550px !important;
+                    margin: 0 auto;
+                }
+
+                .table {
+                    border: 1px solid #ddd;
+                }
+
+                .row {
+                    margin-right: 0px;
+                    margin-left: 0px;
+                }
+
+                table.dataTable th,
+                table.dataTable td {
+                    white-space: nowrap;
+                }
+
+                legend.legendStyle {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                }
+
+                legend {
+                    width: auto;
+                    border-bottom: 0px;
+                }
+
+                .textInput {
+                    margin-bottom: 10px !important;
+                    margin-left: 0px !important;
+                }
+
+                .no-css:before {
+                    display: none !important;
+                }
+
+                fieldset.fsStyle {
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: small;
+                    font-weight: normal;
+                    border: 2px solid threedface;
+                    padding: 4px 25px 20px;
+                    margin: 5px;
+                    border-radius: 8px;
+                }
+
+                legend.legendStyle {
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 18px;
+                    color: #428BCA;
+                    background-color: transparent;
+                    font-weight: bold;
+                }
+
+                .with-css:before {
+                    top: 8px;
+                    left: 4px;
+                    height: 16px;
+                    width: 16px;
+                    display: block;
+                    position: absolute;
+                    color: white;
+                    border: 2px solid white;
+                    border-radius: 16px;
+                    text-align: center;
+                    line-height: 14px;
+                    box-shadow: 0 0 3px #444;
+                    box-sizing: content-box;
+                    content: '+';
+                    background-color: #31b131;
+                }
+
+                .message .messageText h4 {
+                    font-weight: bold !important;
+                    margin-right: 10px !important;
+                    display: inline !important;
+                }
+
+                table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before,
+                table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
+                    font-size: 14px !important;
+                }
+
+                table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child {
+                    cursor: auto !important;
+                }
+
+                .pay-sections-div {
+                    width: 100%;
+                    float: left;
+                    padding: 35px 20px 35px 25px;
+                    border: 1px solid #999;
+                    border-radius: 4px;
+                    border-style: dotted;
+                    box-shadow: 3px -2px 9px -3px;
+                }
+
+                .chqClas input {
+                    height: 32px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    margin-bottom: 8px !important;
+                    padding: 0px 5px 0px 10px !important;
+                }
+
+                .chqClas select {
+                    height: 27px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    margin-bottom: 8px !important;
+                    padding: 0px 5px 0px 10px !important;
+                }
+
+                .pay-radiobtns {
+                    width: 100%;
+                    float: left;
+                }
+
+                .Pay_heading {
+                    text-decoration: none;
+                    width: 100%;
+                    float: left
+                }
+
+                .pay-radiobtns input[type=radio] {
+                    margin-right: 4px !important;
+                }
+
+                .bPageBlock .message {
+                    margin: auto 23% !important;
+                }
+
+                body input[type=text] {
+                    height: 27px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    padding: 0px 5px 0px 10px !important;
+                }
+
+                body select {
+                    height: 27px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    padding: 0px 5px 0px 10px !important;
+                }
+
+                .popup_section_header {
+                    margin-bottom: 20px;
+                }
+
+                .popup_headings {
+                    color: #1195CE;
+                    font-weight: normal;
+                }
+
+                @media screen and (min-device-width: 481px) and (max-device-width: 991px) {
+                    .mediastyle {
+                        padding-right: 0px !important;
+                        padding-left: 0px !important;
+                    }
+                }
+
+                .errorMsg {
+                    display: none !important;
+                }
+
+                .required_symbol {
+                    color: red;
+                    font-size: 14px;
+                }
+
+                .focus-section:focus {
+                    outline: 0;
+                }
+
+                body .btnDisabled {
+                    background-position: 0 -90px !important;
+                    border-color: #dddddd !important;
+                    color: #bebebe !important;
+                }
+
+                .budletableheader {
+                    text-align: center !important
+                }
+
+                .table>tbody>tr>td {
+                    vertical-align: middle;
+                }
+
+            </style>
+        </head>
+
+        <body>
+
+            <apex:actionFunction name="taxcalculation" action="{!taxCalculation}" status="message" oncomplete="focusSection4()" reRender="TopPanel,accounttotals1,accounttotals,theiframediv">
+            </apex:actionFunction>
+            <apex:actionFunction name="customprice" status="message" reRender="manualPaymentPopUp" oncomplete="focussectionp1()">
+            </apex:actionFunction>
+
+            <apex:outputPanel id="manualPaymentPopUp">
+                <apex:outputPanel styleClass="manualorder-popupBackground" layout="block" rendered="{!manualPaymentPopUp}" />
+                <apex:outputPanel styleClass="editSO-custPopup" layout="block" rendered="{!manualPaymentPopUp}">
+                    <div class="editSO-popupcontent_container">
+                        <p>This Order is submited for Approval Process, so please select Manual Payment as a Payament Method</p>
+                    </div>
+                    <div class="man-step2-save-btn" style="width: 100%;margin-bottom: 7px;;float: left;padding: 0px 253px;">
+                        <apex:commandButton value="Close" reRender="manualPaymentPopUp" style="width: 145px !important;font-size: 16px !important;margin-right:10px"
+                            oncomplete="focusSection4()">
+                            <apex:param assignto="{!manualPaymentPopUp}" value="false" name="manualPaymentPopUp"></apex:param>
+                        </apex:commandButton>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="tstselectionpopup">
+                <apex:outputPanel styleClass="manualorder-popupBackground" layout="block" rendered="{!displayselectionPopup}" />
+                <apex:outputPanel styleClass="manualorder-custPopup" layout="block" rendered="{!displayselectionPopup}" style="width: 875px;height: auto;margin-left: -479px;">
+                    <!-- popup inner container-->
+                    <div class="manualorder-popupcontent_container" style="padding:20px;">
+                        <div class="popup_section_header">
+                            <h3>
+                                <b class="popup_headings">{!OptionsName} Bundle Items</b>
+                            </h3>
+                        </div>
+                        <div>
+                            <apex:outputPanel layout="block" style="overflow:auto;height:287px;" id="panelselectionid" styleClass="popup_outputpanel">
+                                <apex:dataTable value="{!ProductRelatedBundle[OptionsId]}" var="bundleItem" id="theoptionTable" styleClass="table table-striped table-bordered table-hover"
+                                    rendered="{!NOT(ISBLANK(ProductRelatedBundle))}">
+                                    <apex:column style="margin-left:10px;text-align:left;width:30%" headerValue="Item" headerClass="budletableheader">
+                                        <apex:outputText value="{!bundleItem.bundleitem.Bundle_Product_Name__c}" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:100px !important;" headerValue="Image" headerClass="budletableheader">
+                                        <apex:image value="{!bundleItem.bundleitem.ImageURL__c}" style="height:45px;width:70px" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:left;width:25%;word-break: break-word;" headerValue="SKU" headerClass="budletableheader">
+                                        <apex:outputText value="{!bundleItem.bundleitem.SKU__c}" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:right;width:10%" headerValue="Price" headerClass="budletableheader">
+                                        <apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!if(bundleItem.bundelpro.size > 0,false,true)}" style="text-align:right">
+                                            <apex:param value="{!bundleItem.bundleitem.Sales_Price__c}" />
+                                        </apex:outputText>
+                                        <apex:outputText value="{0, number, $#,###,###,###,##0.00}" id="tirePrice" rendered="{!if(bundleItem.bundelpro.size > 0,true,false)}">
+                                            <apex:param value="{!bundleItem.configTirePrice[bundleItem.selectedBundeloption]}" />
+                                        </apex:outputText>
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:10%" headervalue="Includes" headerClass="budletableheader">
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,true,false)}" value="Set Includes" />
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,false,true)}" value="Addtional" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:10%" headerValue="Option" headerClass="budletableheader">
+                                        <apex:selectList onclick="outputPanelPrice(this.value)" size="1" rendered="{!if(bundleItem.bundelpro.size > 0,true,false)}"
+                                            value="{!bundleItem.selectedBundeloption}" multiselect="false" id="sellist" style="margin-left: 0px;margin-bottom:0px;width: 123px;">
+                                            <apex:selectOptions value="{!bundleItem.bundelpro}" />
+                                        </apex:selectList>
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:10%" headerValue="Qty." headerClass="budletableheader">
+                                        <apex:inputtext value="{!bundleItem.quantity}" onchange="var reg = new RegExp('^[0-9]+$'); 
+                                                                                                     if(this.value == ''|| (this.value < {!bundleItem.bundleitem.Selection_Qty__c} ) || !reg.test(this.value) || this.value.length >= 4)
+                                                                                                     {
+                                                                                                     alert('Please enter Minimum quantity({!bundleItem.bundleitem.Selection_Qty__c}) to Order.'); 
+                                                                                                     
+                                                                                                     if({!bundleItem.selected}==true && ({!bundleItem.bundleitem.Selection_Qty__c}==0 || {!bundleItem.bundleitem.Selection_Qty__c}==''))
+                                                                                                     {
+                                                                                                     this.value = 1;
+                                                                                                     }
+                                                                                                     else
+                                                                                                     {
+                                                                                                     this.value = this.defaultValue;
+                                                                                                     }
+                                                                                                     }" style="width: 40px;text-align: center;padding: 0px !important;"
+                                            onkeypress="if(event.keyCode == 13){ event.preventDefault();}" id="bundleQty" />
+                                    </apex:column>
+                                    <apex:column style="text-align:center;width:10%" headerValue="Add" headerClass="budletableheader">
+                                        <apex:inputCheckbox value="{!bundleItem.selected}" disabled="{!bundleItem.bundleitem.Include__c}" style="text-align:center;"
+                                        />
+                                    </apex:column>
+                                </apex:dataTable>
+                                <apex:actionFunction name="outputPanelPrice" reRender="tirePrice" />
+                                <apex:pageMessages id="showBundleMsgId" rendered="{!NOT(ISBLANK(ProductRelatedBundle))}" />
+                            </apex:outputPanel>
+                        </div>
+                        <div class="man-step2-save-btn">
+                            <apex:commandButton value="Close" rerender="tstselectionpopup" styleClass="manstep3-savebtn manstep3-popupbtn" style="width: 100px !important;font-size: 16px !important;">
+                                <apex:param assignTo="{!displayselectionPopup}" name="displayselectionPopup" value="false" />
+                            </apex:commandButton>
+                            <apex:commandButton value="Add" action="{!addBundleProduct}" rerender="tstselectionpopup,mytext,TopPanel" styleClass="manstep3-savebtn manstep3-popupbtn"
+                                style="width: 100px !important;font-size: 16px !important;margin-right:27px" rendered="{!isBundleItemexist}">
+                                <apex:param assignTo="{!displayselectionPopup}" name="displayselectionPopup" value="false" />
+                            </apex:commandButton>
+                        </div>
+                        <br/>
+                    </div>
+                    <!--end of popup inner container-->
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <apex:outputPanel id="tstpopup">
+                <apex:outputPanel styleClass="manualorder-popupBackground" layout="block" rendered="{!displayPopUp}" />
+                <apex:outputPanel styleClass="manualorder-custPopup" layout="block" rendered="{!displayPopUp}" style="width: 875px;height: auto;margin-left: -479px;">
+                    <!-- popup inner container-->
+                    <div class="manualorder-popupcontent_container" style="padding:20px;">
+                        <div class="popup_section_header">
+                            <h3>
+                                <b class="popup_headings">{!OptionsName} Bundle Items</b>
+                            </h3>
+                        </div>
+                        <div>
+                            <apex:outputPanel layout="block" style="overflow:auto;height:287px;" id="panelid">
+                                <apex:dataTable value="{!SoRelatedBundle}" var="bundleItem" id="theoptionTableQI" styleClass="table table-striped table-bordered table-hover">
+                                    <apex:column style="margin-left:10px;text-align:left;width:30%" headerValue="Item" headerClass="budletableheader">
+                                        <apex:outputText value="{!bundleItem.bundleitem.name}" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:left;width: 100px !important;" headerValue="Image" headerClass="budletableheader">
+                                        <apex:image value="{!bundleItem.bundleitem.ImageURL__c}" style="height:45px;width:70px" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:left;width:25%;word-break: break-word;" headerValue="SKU" headerClass="budletableheader">
+                                        <apex:outputText value="{!bundleItem.bundleitem.SKU__c}" />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:right;width:10%" headerValue="Price" headerClass="budletableheader">
+                                        <apex:outputText value="{0, number, $#,###,###,###,##0.00}" id="salesPrice">
+                                            <apex:param value="{!bundleItem.bundleitem.Sales_Price__c}" />
+                                        </apex:outputText>
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:10%" headerValue="Option" headerClass="budletableheader">
+                                        <apex:selectList size="1" rendered="{!if(bundleItem.selectedBundeloption !=null,true,false)}" value="{!bundleItem.selectedBundeloption}"
+                                            multiselect="false" id="sellist" style="margin-left: 0px;margin-bottom:0px;width: 123px;">
+                                            <apex:selectOptions value="{!bundleItem.bundelpro}" />
+                                        </apex:selectList>
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:10%" headervalue="Includes" headerClass="budletableheader">
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,true,false)}" value="Set Includes" />
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,false,true)}"
+                                        />
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,false,true)}" value="Additional" />
+                                        <apex:outputText rendered="{!if(bundleItem.bundleitem.Include__c==true,true,false)}"
+                                        />
+                                    </apex:column>
+                                    <apex:column style="margin-left:10px;text-align:center;width:15%" headerValue="Qty." headerClass="budletableheader">
+                                        <apex:inputText value="{!bundleItem.quantity}" onchange="var reg = new RegExp('^[0-9]+$'); 
+                                                                                                     if(this.value == ''|| (this.value < {!bundleItem.bundleitem.Selection_Qty__c} ) || !reg.test(this.value)|| this.value.length >= 4 )
+                                                                                                     {
+                                                                                                     alert('Please enter Minimum quantity({!bundleItem.bundleitem.Selection_Qty__c}) to Order.'); 
+                                                                                                     if({!bundleItem.selected}==true && ({!bundleItem.bundleitem.Selection_Qty__c}==0 || {!bundleItem.bundleitem.Selection_Qty__c}==''))
+                                                                                                     {
+                                                                                                     this.value = 1;
+                                                                                                     }
+                                                                                                     else
+                                                                                                     {
+                                                                                                     this.value = this.defaultValue;
+                                                                                                     }
+                                                                                                     }" id="qtyid" style="width: 40px;text-align: center;padding: 0px !important;"
+                                        />
+                                    </apex:column>
+                                    <apex:column style="text-align:center;width:10%" headerValue="Add" headerClass="budletableheader">
+                                        <apex:inputCheckbox id="test" value="{!bundleItem.selected}" disabled="{!bundleItem.bundleitem.Include__c}" style="text-align:center;"
+                                            onclick="if(this.checked==true){                                                                                                                                                                                             document.getElementById(qtyid).value='1';                                                                                                                                                                                          }">
+                                            <apex:actionSupport rendered="qtyid" />
+                                        </apex:inputCheckbox>
+                                    </apex:column>
+                                </apex:dataTable>
+                            </apex:outputPanel>
+                        </div>
+
+                        <div class="man-step2-save-btn" style="width: 100%;margin-bottom: 20px;float: left;padding: 0px 230px;">
+                            <apex:commandButton value="Update" action="{!UpdateBundelItems}" rerender="tstpopup,ProtectionPlan,selectedPro,accounttotals,accounttotals1"
+                                styleClass="manstep3-savebtn manstep3-popupbtn" style="width: 100px !important;font-size: 16px !important;margin-right:10px"
+                            />
+                            <apex:commandButton value="Close" rerender="tstpopup" styleClass="manstep3-savebtn manstep3-popupbtn" style="width: 100px !important;font-size: 16px !important;">
+                                <apex:param assignTo="{!displayPopUp}" value="false" name="displayPopUp" />
+                            </apex:commandButton>
+                        </div>
+                        <br/>
+                    </div>
+                    <!--end of popup inner container-->
+                </apex:outputPanel>
+            </apex:outputPanel>
+
+            <apex:actionFunction status="message" name="renderProducts" action="{!showProducts}" reRender="TopPanel,errormessage">
+                <apex:param value="" name="productlistfromparam" />
+            </apex:actionFunction>
+
+            <apex:outputpanel >
+                <apex:actionstatus id="message">
+                    <apex:facet name="start">
+                        <div class="waitingSearchDiv" id="el_loading" style="background-color: #d7d7d7;height:100%;opacity:0.6;width:100%;position:fixed;cursor:wait">
+                            <div class="waitingHolder" style="top:250px; width: 91px;">
+                                <img class="waitingImage" src="{!$Resource.loading}" title="Please Wait..." />
+                                <span class="waitingDescription" style="color:#000 !important;">Processing...</span>
+                            </div>
+                        </div>
+                    </apex:facet>
+                </apex:actionstatus>
+            </apex:outputpanel>
+
+            <div id="main-wrapper">
+                <!-- Header effect -->
+                <div class="effect6" style="margin-bottom: 25px;">
+                    <div class="header_container">
+                        <apex:image value="{!$Resource.coleman_header_logo}" />
+                        <div style="float:right;width: 19%;padding: 20px 0px;">
+                            <apex:commandButton status="message" id="home" value="Home Page" oncomplete="goToHomePage()" styleClass="Header-btns" style="background: #F3F3F3 !important;font-size:11px;margin-right:10px"
+                            />
+                            <apex:commandButton status="message" id="salesOrder" value="Sales Orders List" action="{!goTosalesorderlist}" styleClass="Header-btns"
+                                style="background: #F3F3F3 !important;font-size:11px;margin-right:10px" />
+                            <apex:commandButton status="message" id="Cancel" immediate="true" value="Cancel" action="{!cancelSalesOrder}" styleClass="Header-btns"
+                                style="background: #F3F3F3 !important;font-size:11px;margin-right:0px" />
+                        </div>
+                    </div>
+                </div>
+                <!--end of Header effect -->
+
+                <div id="container" class="container content_container" style="margin-top: 105px;">
+                    <div id="errors-js"> </div>
+                    <apex:pagemessages id="errormessage" />
+                    <!-- Selected Products  -->
+                    <apex:pageBlock id="selectedPro">
+                        <div class="row">
+                            <div class="manorder-section-heading">
+                                <h4>Selected Products</h4>
+                            </div>
+                        </div>
+                        <input type="text" id="mytext" class="focus-section" style=" width: 0px !important;height: 0px !important; border-color: #6B3D3D !important;border-width: 0px !important; margin: 0;"
+                        />
+                        <apex:actionFunction name="updateProducts" status="message" action="{!updateProduct}" reRender="amountidE,TopPanel,TopPanel1,selectedPro,ProtectionPlan,accounttotals,grandtotalidfld,errormessage1"
+                            oncomplete="searchProductsJS(2),focusSection()" />
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="manualorder-table2-content">Action</th>
+                                    <th class="manualorder-table2-content">Image</th>
+                                    <th style="text-align:left;">Name</th>
+                                    <th class="manualorder-table2-content">SKU</th>
+                                    <th class="manualorder-table2-content">FedExable</th>
+                                    <th class="manualorder-table2-content">Unit Price</th>
+                                    <th class="manualorder-table2-content">Quantity</th>
+                                    <th class="manualorder-table2-content">Total Price</th>
+                                    <th class="manualorder-table2-content">Discount Amount($)</th>
+                                    <th class="manualorder-table2-content">Custom Price($)</th>
+                                    <th class="manualorder-table2-content">Option</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat value="{!SoRelated}" var="proItem">
+                                    <tr>
+                                        <td class="manualorder-table2-content">
+                                            <apex:commandButton value="✘" rendered="{!SoRelated[proItem].soi.Item__c != 'Cancelled'}" reRender="productslist,ProtectionPlan,accounttotals,accounttotals1,grandtotalidfld,selectedPro"
+                                                action="{!RemoveProduct}" styleClass="manual-remove_btn" style="background: none !important;"
+                                                oncomplete="searchProductsJS(2);">
+                                                <apex:param name="Remove" value="{!SoRelated[proItem].soi.id}"></apex:param>
+                                            </apex:commandButton>
+                                            <apex:commandButton value="V" rendered="{!SoRelated[proItem].soi.Item__c == 'Cancelled'}" reRender="productslist,ProtectionPlan,accounttotals,accounttotals1,grandtotalidfld,selectedPro"
+                                                action="{!UnRemoveProduct}" styleClass="manual-remove_btn" style="background: Red !important;"
+                                                oncomplete="searchProductsJS(2);">
+                                                <apex:param name="UnRemove" value="{!SoRelated[proItem].soi.id}"></apex:param>
+                                            </apex:commandButton>
+                                            <apex:outputText value="Cancelled" rendered="{!SoRelated[proItem].soi.Item__c == 'Cancelled'}" style="background: Red !important;"
+                                            />
+                                        </td>
+                                        <td class="manualorder-table2-content">
+                                            <img src="{!SoRelated[proItem].soi.ProductImageUrl__c}" width="70px" height="45px"
+                                            /> </td>
+                                        <td style="text-align:left;">
+                                            <apex:outputText value="{!SoRelated[proItem].soi.Product_Name__c}" /> </td>
+                                        <td class="manualorder-table2-content">
+                                            <apex:outputText value="{!SoRelated[proItem].soi.ProductSKU__c}" /> </td>
+                                        <td class="manualorder-table2-content">
+                                            <apex:outputText value="{!SoRelated[proItem].soi.FedExable__c}" /> </td>
+                                        <td class="manualorder-table2-content">$
+                                            <apex:inputText id="unitfldid" value="{!SoRelated[proItem].soi.UnitPrice__c}" style="display:none;"
+                                            />
+                                            <apex:outputText value="{!SoRelated[proItem].soi.UnitPrice__c}" /> </td>
+                                        <td class="manualorder-table2-content">
+                                            <apex:inputText id="validqty" onchange="javascript:validateUpdatedQuantity('{!$Component.customfldid}','{!$Component.validqty}','{!$Component.discfldid}','{!$Component.unitfldid}')"
+                                                value="{!SoRelated[proItem].soi.Quantity__c}" style="width: 40px;text-align: center;padding: 0px !important;"
+                                                styleClass="restrictenterkey" />
+                                        </td>
+                                        <td class="manualorder-table2-content">$
+                                            <apex:inputText id="totalid" value="{!SoRelated[proItem].soi.Sub_Total__c}" style="display:none;"
+                                            />
+                                            <apex:outputText value="{!SoRelated[proItem].soi.Sub_Total__c}" style="width: 50px;text-align: center;margin-left:0px;"
+                                            /> </td>
+                                        <td class="manualorder-table2-content">$
+                                            <apex:inputText id="discfldid" rendered="{!if(SoRelated[proItem].soi.Item__c != 'Cancelled',true,false)}"
+                                                value="{!SoRelated[proItem].soi.DiscountAmount__c}" style="width: 70px;text-align: center;margin-left:0px;"
+                                                styleClass="restrictenterkey" onchange="javascript:validateDiscount('{!$Component.discfldid}')"
+                                            />
+                                        </td>
+                                        <td class="manualorder-table2-content">
+                                            <apex:inputText id="customfldid" rendered="{!if('Protection Plan'!= SoRelated[proItem].soi.Products__r.recordtype.name && SoRelated[proItem].soi.Item__c != 'Cancelled',true,false)}"
+                                                value="{!SoRelated[proItem].soi.Custom_Price__c}" onchange="javascript:validatecustomprice('{!$Component.customfldid}','{!$Component.validqty}','{!$Component.discfldid}','{!$Component.unitfldid}')"
+                                                style="width: 70px;text-align: center;margin-left:0px;" styleClass="restrictenterkey"
+                                            /> </td>
+                                        <td class="manualorder-table2-content">
+                                            <apex:commandButton value="Options" disabled="{!SoRelated[proItem].soi.Item__c == 'Cancelled'}" action="{!ShowBundelProduct}"
+                                                reRender="tstpopup" rendered="{!if('Bundled'== SoRelated[proItem].soi.Products__r.recordtype.name,true,false)}"
+                                                styleClass="manstep3-continuebtn edit-SO-optn-btn" title="Please remove this product to update Bundle Items.">
+                                                <apex:param name="OptionsId" value="{!SoRelated[proItem].soi.Products__c}" id="OptionsId" />
+                                                <apex:param name="OptionsName" assignTo="{!OptionsName}" value="{!SoRelated[proItem].soi.Name}" id="OptionsName" />
+                                                <apex:param name="SOItemId" assignTo="{!SOItemId}" value="{!SoRelated[proItem].soi.id}" id="SOItemId" />
+                                            </apex:commandButton>
+                                            <apex:selectList size="1" onchange="javascript:removeCustomPrice('{!$Component.customfldid}')" rendered="{!if(SoRelated[proItem].soi.Config_Product__c != null,true,false)}"
+                                                value="{!SoRelated[proItem].soi.Config_Product__c}" multiselect="false" id="sellist"
+                                                style="margin-left: 0px;margin-bottom:0px;width: 123px;">
+                                                <apex:selectOptions value="{!SoRelated[proItem].configpro}" />
+                                            </apex:selectList>
+                                        </td>
+                                    </tr>
+                                    <apex:repeat rendered="{!if('Bundled'== SoRelated[proItem].soi.Products__r.recordtype.name,true,false)}" value="{!SoRelated[proItem].bundelItems}"
+                                        var="item">
+                                        <tr>
+                                            <td class="manualorder-table2-content"></td>
+                                            <td class="manualorder-table2-content">
+                                                <img src="{!item.ProductImageUrl__c}" width="70px" height="45px" /> </td>
+                                            <td class="manualorder-table2-content" style="text-align: left;">
+                                                <apex:outputText value="{!item.Product_Name__c}" />
+                                            </td>
+                                            <td class="manualorder-table2-content">
+                                                <apex:outputText value="{!item.ProductSKU__c}" />
+                                            </td>
+                                            <td class="manualorder-table2-content">
+                                                <apex:outputText value="{!item.FedExable__c}" />
+                                            </td>
+                                            <!--td class="manualorder-table2-content">$<apex:outputText value="{!item.OriginalPrice__c}" /></td-->
+                                            <td class="manualorder-table2-content">$
+                                                <apex:outputText value="{!item.UnitPrice__c}" />
+                                            </td>
+                                            <td class="manualorder-table2-content">
+                                                <apex:outputText id="bundleqty" value="{!item.Quantity__c}" style="width: 40px;text-align: center;"
+                                                />
+                                            </td>
+                                            <td class="manualorder-table2-content">$
+                                                <apex:outputText value="{!item.Sub_Total__c}" />
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </apex:repeat>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                        <p style="color:#333;margin: 1% 30%;">
+                            <b>Note: </b>To Update the changes, please scroll down and click the ''Update Products'' button.</p>
+                    </apex:pageBlock>
+                    <!-- end Selected Products -->
+
+                    <!-- Search block -->
+                    <div class="col-md-12" style="padding:0;margin-bottom:15px">
+                        <fieldset class="fsStyle">
+                            <legend class="legendStyle" style="margin-bottom: 10px;">Product Search</legend>
+                            <!--   <input type="text" id="mytext3" class="focus-section"  style=" width: 0px !important;height: 0px !important; border-color: #fff !important;border-width: 0px !important; margin: 0;"/> -->
+                            <apex:pageBlock >
+                                <div class="row collapse in">
+                                    <div class="col-md-4">
+                                        <fieldset class="inner" style="width:100%;margin-right:0px;padding: 0px 24.2px;border: 0px;">
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 34%;font-size: 12px;"> Product Name :</label>
+                                                <input id="accName" type="text" onkeypress="uniKeyCode(event)" />
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <fieldset class="inner" style="width:100%;margin-right:0px;padding: 0px 24.2px;border: 0px;">
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width:34%;font-size: 12px;"> Manufacturer :</label>
+                                                <input id="manufacture" type="text" onkeypress="uniKeyCode(event)" />
+                                            </div>
+                                            <br/>
+                                        </fieldset>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <fieldset class="inner" style="width:100%;margin-right:0px;padding: 0px 24.2px;border: 0px;">
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 34%;font-size: 12px;">SKU :</label>
+                                                <input id="sku" type="text" onkeypress="uniKeyCode(event)" />
+                                            </div>
+                                            <br/>
+                                        </fieldset>
+                                    </div>
+                                </div>
+                                <div class="productsearch-btn-div">
+                                    <apex:commandButton id="Search" value="Search" onclick="searchProductsJS(1)" reRender="javaScriptPanel" styleClass="productsearchbtn manstep3-continuebtn"
+                                    />
+                                </div>
+                            </apex:pageBlock>
+                        </fieldset>
+                    </div>
+
+                    <!-- end of Search block-->
+
+                    <!-- Search, sort, paging table -->
+                    <apex:outputPanel id="TopPanel">
+                        <apex:outputPanel id="TopPanel1">
+                            <p style="display:none">
+                                lastPayapalId:
+                                <input id="lastPayapalId" value="{!lastPayapalId}" type="text" />
+                                <br/> firstPayapalId:
+                                <input id="firstPayapalId" value="{!firstPayapalId}" type="text" />
+                                <br/> storedquery:
+                                <input id="storedquery" value="{!storedquery}" type="text" />
+                                <br/> SalesorderObject Id:
+                                <input id="SalesorderObject" value="{!SalesorderObject.id}" type="text"
+                                />
+                                <br/>
+                            </p>
+
+                            <div class="productsearch-nxt-prev-div" style="padding: 6px 0px">
+                                <div style="width:16%;float:right;">
+                                    <apex:commandButton id="Previous" value="Previous" onclick="getPrevProductsJS()" reRender="TopPanel" styleClass="productsearchnxt manstep3-continuebtn"
+                                        style="margin-right:20px;font-size:12px !important;width: 70px;font-weight: bold !important;"
+                                    />
+                                    <apex:commandButton id="Next" value="Next" onclick="getNextProductsJS()" reRender="TopPanel" styleClass="productsearchnxt manstep3-continuebtn"
+                                        style="font-size:12px !important;width: 70px;font-weight: bold !important;" />
+                                </div>
+                            </div>
+                            <table class="table table-striped" role="grid" aria-describedby="example_info" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr role="row">
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Image: activate to sort column ascending"
+                                            style="width: 50px;">Image</th>
+                                        <th class="sorting_asc" aria-sort="ascending" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Name: activate to sort column ascending"
+                                            style="width: 40px;">Name</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="SKU: activate to sort column ascending"
+                                            style="width: 45px;">SKU</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Regular Price: activate to sort column ascending"
+                                            style="width: 27px;text-align:center">Regular Price</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Sales Price: activate to sort column ascending"
+                                            style="width: 20px;text-align:center">Sales Price</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Special Price: activate to sort column ascending"
+                                            style="width: 20px;text-align:center">Special Price</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Options: activate to sort column ascending"
+                                            style="width: 20px;text-align:center;text-align:center">Options</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Options: activate to sort column ascending"
+                                            style="width: 20px;text-align:center">Quantity</th>
+                                        <th class="sorting" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Options: activate to sort column ascending"
+                                            style="width: 20px;text-align:center;text-align:center">Add</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <apex:repeat id="products" value="{!productWrapperList}" var="productItem">
+                                        <tr role="row" id="index" class="odd">
+                                            <td>
+                                                <img src="{!productWrapperList[productItem].pro.Product_Image_URL__c}" width="70px"
+                                                    height="45px" /> </td>
+                                            <td>
+                                                <apex:outputText value="{!productWrapperList[productItem].pro.Name}" />
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{!productWrapperList[productItem].pro.SKU__c}" />
+                                            </td>
+                                            <td style="text-align:center">
+                                                <!--apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!if(productWrapperList[productItem].pro.recordtype.name =='Configurable',false,true)}">
+<apex:param value="{!productWrapperList[productItem].pro.Regular_Price__c}" />
+</apex:outputText>
+<apex:outputText value="{0, number, $#,###,###,###,##0.00}" id="RegularPrice">
+<apex:param value="{!productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption]}" />
+</apex:outputText-->
+                                                <apex:outputText escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name == 'Configurable',false,true)}">
+                                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].pro.Regular_Price__c)),productWrapperList[productItem].pro.Regular_Price__c > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].pro.Regular_Price__c}" />
+                                                    </apex:outputText>
+                                                    <apex:outputText escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].pro.Regular_Price__c),productWrapperList[productItem].pro.Regular_Price__c <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                                <apex:outputText id="RegularPrice" escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name != 'Configurable',false,true)}">
+                                                    <apex:outputText id="RegularPriceId" value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption])),productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption] > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption]}"
+                                                        />
+                                                    </apex:outputText>
+                                                    <apex:outputText id="RegularPricewithZeroPriceId" escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption]),productWrapperList[productItem].configRegularPrice[productWrapperList[productItem].selectedoption] <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <!--apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!if(productWrapperList[productItem].pro.recordtype.name =='Configurable',false,true)}">
+<apex:param value="{!productWrapperList[productItem].pro.Sales_Price__c}" />
+</apex:outputText>
+<apex:outputText value="{0, number, $#,###,###,###,##0.00}" id="SalesPrice">
+<apex:param value="{!productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption]}" />
+</apex:outputText-->
+                                                <apex:outputText escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name == 'Configurable',false,true)}">
+                                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].pro.Sales_Price__c)),productWrapperList[productItem].pro.Sales_Price__c > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].pro.Sales_Price__c}" />
+                                                    </apex:outputText>
+                                                    <apex:outputText escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].pro.Sales_Price__c),productWrapperList[productItem].pro.Sales_Price__c <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                                <apex:outputText id="SalesPrice" escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name != 'Configurable',false,true)}">
+                                                    <apex:outputText id="SalesPriceId" value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption])),productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption] > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption]}" />
+                                                    </apex:outputText>
+                                                    <apex:outputText id="SalesPriceWithZeroPriceId" escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption]),productWrapperList[productItem].configSalesPrice[productWrapperList[productItem].selectedoption] <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <!--apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!if(productWrapperList[productItem].pro.recordtype.name =='Configurable',false,true)}" >
+<apex:param value="{!productWrapperList[productItem].pro.Special_Price_Hidden__c}" />
+</apex:outputText>
+<apex:outputText value="{0, number, $#,###,###,###,##0.00}" id="SpecialPrice">
+<apex:param value="{!productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption]}" />
+</apex:outputText-->
+                                                <apex:outputText escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name == 'Configurable',false,true)}">
+                                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].pro.Special_Price_Hidden__c)),productWrapperList[productItem].pro.Special_Price_Hidden__c > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].pro.Special_Price_Hidden__c}" />
+                                                    </apex:outputText>
+                                                    <apex:outputText escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].pro.Special_Price_Hidden__c),productWrapperList[productItem].pro.Special_Price_Hidden__c <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                                <apex:outputText id="SpecialPrice" escape="false" rendered="{!if(productWrapperList[productItem].pro.recordtype.name != 'Configurable',false,true)}">
+                                                    <apex:outputText id="SpecialPriceId" value="{0, number, $#,###,###,###,##0.00}" rendered="{!AND(NOT(ISNULL(productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption])), productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption] > 0)}">
+                                                        <apex:param value="{!productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption]}"
+                                                        />
+                                                    </apex:outputText>
+                                                    <apex:outputText id="SpecialPriceWithZeroPriceId" escape="false" value="-" rendered="{!OR(ISNULL(productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption]), productWrapperList[productItem].configSpecialPrice[productWrapperList[productItem].selectedoption] <= 0)}"
+                                                    />
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <apex:commandButton status="message" value="Options" reRender="tstselectionpopup" rendered="{!if('Bundled'== productWrapperList[productItem].pro.recordtype.name,true,false)}"
+                                                    styleClass="manstep3-continuebtn edit-SO-optn-btn">
+                                                    <apex:param name="OptionsId" assignTo="{!OptionsId}" value="{!productWrapperList[productItem].pro.id}" id="OptionsId" />
+                                                    <apex:param name="OptionsName" assignTo="{!OptionsName}" value="{!productWrapperList[productItem].pro.Name}" id="OptionsName"
+                                                    />
+                                                    <apex:param name="display" assignTo="{!displayselectionPopup}" value="true" id="display" />
+                                                </apex:commandButton>
+                                                <apex:selectList size="1" onchange="testMethod(this.value)" rendered="{!if(productWrapperList[productItem].pro.recordtype.name =='Configurable',true,false)}"
+                                                    value="{!productWrapperList[productItem].selectedoption}" multiselect="false"
+                                                    id="sellist" style="margin-left: 0px;margin-bottom:0px;width: 123px;">
+                                                    <apex:selectOptions value="{!productWrapperList[productItem].configpro}" />
+                                                </apex:selectList>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <apex:inputtext value="{!productWrapperList[productItem].quantity}" onchange="javascript:validateQuantity('{!$Component.qty}')"
+                                                    style="width: 40px;text-align: center;padding: 0px !important;" id="qty"
+                                                    styleClass="restrictenterkey" />
+                                            </td>
+                                            <td style="text-align:center">
+                                                <apex:inputCheckbox id="inputCheckId" value="{!productWrapperList[productItem].selected}" style="text-align:center;">
+                                                    <apex:actionSupport status="message" action="{!addProduct}" oncomplete="autofocusSection('{!productWrapperList[productItem].pro.recordtype.name}','{!productWrapperList[productItem].configpro}','{!isBundleItemexist}',this.checked,this)"
+                                                        event="onclick" reRender="tstselectionpopup,qty">
+                                                        <apex:param value="{!productItem}" name="productID" />
+                                                        <apex:param name="OptionsId" assignTo="{!OptionsId}" value="{!productWrapperList[productItem].pro.id}" id="Options" />
+                                                        <apex:param name="OptionsName" assignTo="{!OptionsName}" value="{!productWrapperList[productItem].pro.Name}" id="OptionsNames"
+                                                        />
+                                                        <apex:param value="{!if('Bundled'== productWrapperList[productItem].pro.recordtype.name ,true,false)}" assignTo="{!displayselectionPopup}"
+                                                            name="display" />
+                                                    </apex:actionSupport>
+                                                </apex:inputCheckbox>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    <!-- end of Search, sort, paging table -->
+
+                    <!--apex:actionFunction name="testMethod"  reRender="SpecialPrice,SalesPrice,RegularPrice"/-->
+                    <apex:actionFunction name="testMethod" reRender="TopPanel" />
+                    <div class="man-step3-continue-btn-div">
+                        <input type="text" id="mytext1" class="focus-section" style=" width: 10px !important;height: 10px !important; border-color: #6B3D3D !important;border-width: 0px !important; margin: 0;margin-top:-8px;"
+                        />
+                        <apex:commandButton id="updateProductsbtn" status="message" value="Update Products" action="{!updateProduct}" reRender="amountidE,TopPanel,TopPanel1,selectedPro,ProtectionPlan,accounttotals,grandtotalidfld,errormessage1"
+                            styleClass="manorder-updatebtn manstep3-continuebtn" oncomplete="searchProductsJS(2),focusSection()"
+                        />
+                    </div>
+
+                    <!-- Protection Plan & Promo code section -->
+                    <apex:pageblock id="ProtectionPlan">
+                        <div class="col-md-12" style="padding:0;">
+                            <!-- Promo code error -->
+                            <apex:pageBlock >
+                                <apex:pageMessages id="errormessage3" />
+                            </apex:pageBlock>
+                            <!-- Promo code error -->
+                            <apex:pageblock id="Addplan" rendered="{!if(protectionplanSOI.id==null && protectionplanSOI.Product_Name__c != null,true,false)}">
+                                <div class="col-md-6">
+                                    <fieldset class="fsStyle">
+                                        <legend class="legendStyle">Protection Plan Details</legend>
+                                        <div class="manstep3-promo-outerdiv" style="padding: 20px 0px;">
+                                            <label for="activity_from_date" class="manstep3promolabel"> Protection Plan : </label>
+                                            <apex:outputField value="{!protectionplanSOI.Product_Name__c}" />&nbsp;&nbsp;
+                                            <apex:outputField value="{!protectionplanSOI.UnitPrice__c}" />&nbsp;&nbsp;
+                                            <apex:commandButton value="Add" status="message" reRender="ProtectionPlan,accounttotals,grandtotalidfld,selectedPro" rendered="{!if(protectionplanSOI != null,true,false)}"
+                                                action="{!AddProtectionPlan}" styleClass="manstep3-savebtn manstep3-add-btn"
+                                                style="margin-left:10px;width: 70px;float: none !important;" />
+                                        </div>
+                                    </fieldset>
+                                </div>
+                            </apex:pageblock>
+                            <div class="col-md-6">
+                                <fieldset class="fsStyle">
+                                    <input type="text" id="mytext5" class="focus-section" style=" width: 0px !important;height: 0px !important; border-color: #6B3D3D !important;border-width: 0px !important; margin: 0;margin-top:-8px;"
+                                    />
+                                    <legend class="legendStyle">Promotion Details</legend>
+                                    <div class="manstep3-promo-outerdiv" style="padding: 22px 0px;">
+                                        <label for="activity_from_date" class="manstep3promolabel">Promotion :</label>
+                                        <apex:inputField value="{!SalesorderObject.Promotion__c}" styleClass="restrictenterkey">
+                                            <apex:actionSupport status="message" event="onchange" reRender="ProtectionPlan,accounttotals,grandtotalidfld,selectedPro"
+                                                action="{!updatePromocode}" />
+                                        </apex:inputField>
+                                        <apex:commandLink action="/apex/AllActivePromoCode" target="_blank" value="Active Promocodes" />
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                    </apex:pageblock>
+                    <br/>
+                    <br/>
+                    <!--end of Protection Plan & Promo code section -->
+
+                    <!-- Sales Order Details-->
+                    <div class="col-md-12" style="padding:0;margin-bottom:30px;margin-top:20px;">
+                        <fieldset class="fsStyle">
+                            <legend class="legendStyle">Existing Customer Details</legend>
+                            <input type="text" id="mytext3" class="focus-section" style=" width: 0px !important;height: 0px !important; border-color: #fff !important;border-width: 0px !important; margin: 0;"
+                            />
+                            <apex:pageBlock id="soInfo">
+
+                                <div class="row collapse in" id="demo">
+                                    <div class="col-md-6">
+                                        <fieldset class="inner" style="width:100%;margin-right:0px;padding: 0px 24.2px;border: 0px;">
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 45%;font-size: 12px;">Customer :</label>
+                                                <apex:outputField value="{!Sales_Order__c.Customer_Name__r.name}" label="BillingStreet" id="customernameid" />
+                                            </div>
+                                            <br/>
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 45%;font-size: 12px;">Email
+                                                    <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                                <apex:inputField value="{!SalesorderObject.Email__c}"
+                                                    styleClass="restrictenterkey" />
+                                            </div>
+                                            <br/>
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 45%;font-size: 12px;">Alternate Email :</label>
+                                                <apex:inputField value="{!Sales_Order__c.Alternate_Email__c}"
+                                                    styleClass="restrictenterkey" />
+                                            </div>
+                                            <br/>
+                                        </fieldset>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <fieldset class="inner" style="width:100%;margin-right:0px;padding: 0px 24.2px;border: 0px;">
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 45%;font-size: 12px;">Order Type :</label>
+                                                <apex:outputField value="{!Sales_Order__c.Order_Type__c}"
+                                                    label="Order Type" />
+                                            </div>
+                                            <br/>
+                                            <div class="bill-add-rows">
+                                                <label class="bill-add-label" style="width: 45%;font-size: 12px;">Sales Representative :</label>
+                                                <apex:outputField value="{!Sales_Order__c.Sales_Representative__c}"
+                                                    styleClass="manualorder-user_link" />
+                                            </div>
+                                            <br/>
+                                        </fieldset>
+                                    </div>
+                                </div>
+                            </apex:pageBlock>
+                        </fieldset>
+                    </div>
+                    <br/>
+                    <br/>
+                    <!-- end of Sales Order Details-->
+
+                    <!-- Address Information -->
+                    <apex:pageBlock id="addressblocks">
+                        <div class="col-md-12" style="padding:0;margin-bottom:20px">
+                            <fieldset class="fieldset1 address-fld">
+                                <div class="checkbox-div">
+                                    <input type="text" id="mytext4" class="focus-section" style=" width: 0px !important;height: 0px !important; border-color: #fff !important;border-width: 0px !important; margin: 0;margin-top:-8px;"
+                                    />
+                                    <a style="color: #428bca !important;text-decoration:underline" onclick="javascript: addressCopy('{!$Component.b01}', '{!$Component.b0}', '{!$Component.b1}', '{!$Component.b2}', '{!$Component.b3}', '{!$Component.b4}', '{!$Component.b5}', '{!$Component.s00}_lkid','{!$Component.s01}', '{!$Component.s0}', '{!$Component.s1}', '{!$Component.s2}', '{!$Component.s3}', '{!$Component.s4}','{!$Component.s5}')">
+                                    Copy Billing Address to Shipping Address </a> &nbsp; &nbsp;
+                                    <!--<apex:inputCheckbox onclick="javascript: addressCopy('{!$Component.b00}','{!$Component.s00}','{!$Component.b00}_lkid', '{!$Component.b01}', '{!$Component.b0}', '{!$Component.b1}', '{!$Component.b2}', '{!$Component.b3}', '{!$Component.b4}', '{!$Component.b5}', '{!$Component.s00}_lkid','{!$Component.s01}', '{!$Component.s0}', '{!$Component.s1}', '{!$Component.s2}', '{!$Component.s3}', '{!$Component.s4}','{!$Component.s5}')"> </apex:inputCheckbox>-->
+                                </div>
+
+                                <div class="col-md-6">
+                                    <fieldset class="fsStyle">
+                                        <legend class="legendStyle">Billing Address</legend>
+                                        <!-- <div class="bill-add-rows">
+                                                 <label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing Address :</label>
+                                                <apex:inputField id="b00" value="{!SalesorderObject.Customer_Billing_Address__c}" label="BillingAddress" style="width:33%" styleClass="restrictenterkey" >
+                                                    <apex:actionSupport status="message" event="onselect" reRender="addressblocks" action="{!AutoFillAddress}" oncomplete="focusSection4()">
+                                                        <apex:param name="CustomerBillAddressID"  value="{!SalesorderObject.Customer_Billing_Address__c}" />
+                                                    </apex:actionSupport>
+                                                </apex:inputField>
+                                            </div> <br/>-->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;"> Bill To
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span>:</label>
+                                            <apex:inputField id="b01" value="{!SalesorderObject.Bill_To__c}"
+                                                label="Bill To" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;"> Billing Street
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="b0" value="{!SalesorderObject.Billing_Street__c}"
+                                                label="BillingStreet" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing City
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="b1" value="{!SalesorderObject.Billing_City__c}"
+                                                label="BillingCity" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!--div class="bill-add-rows"><label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing State/Province:</label> <apex:inputField id="b2" value="{!SalesorderObject.Billing_State__c}" label="BillingState"/></div><br/-->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing State/Province:
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span>
+                                            </label>
+                                            <apex:selectList size="1" value="{!SalesorderObject.Billing_State__c}" multiselect="false" id="b2" style="margin-left: 0px;margin-bottom:0px;width: 33%;">
+                                                <apex:selectOptions value="{!stateList}" />
+                                            </apex:selectList>
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing Zip/Postal Code
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="b3" value="{!SalesorderObject.Billing_ZipCode__c}"
+                                                label="BillingPostalCode" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!--  onchange="javascript:validateZipcode('{!$Component.b3}')" -->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Billing Telephone
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="b4" value="{!SalesorderObject.Billing_Phone__c}"
+                                                label="Phone" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!-- onchange="javascript:validateTelephone('{!$Component.b4}')" -->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Cell:</label>
+                                            <apex:inputField id="b5" value="{!SalesorderObject.Mobile__c}"
+                                                label="Mobile" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!-- onchange="javascript:validatecellnumber('{!$Component.b5}')"  -->
+                                    </fieldset>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <fieldset class="fsStyle">
+                                        <legend class="legendStyle">Shipping Address</legend>
+                                        <!-- <div class="bill-add-rows"><label class="bill-add-label" style="width: 45%;font-size: 12px;">  Shipping Address:</label><apex:inputField id="s00" value="{!SalesorderObject.Customer_shipping_Address__c}" label="ShippingAddress" style="width:33%" styleClass="restrictenterkey">
+                                                <apex:actionSupport status="message" event="onselect" reRender="theiframediv,addressblocks,CompaniesDistance,accounttotals" action="{!AutoFillAddress}" oncomplete="focusSection4()">
+                                                    <apex:param name="CustomershipAddressID"  value="{!SalesorderObject.Customer_shipping_Address__c}"/>
+                                                </apex:actionSupport>
+                                                </apex:inputField></div><br/> -->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Ship To
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="s01" value="{!SalesorderObject.Ship_to__c}"
+                                                label="Ship To" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping Street
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="s0" value="{!SalesorderObject.Shipping_Street__c}"
+                                                label="ShippingStreet" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping City
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="s1" value="{!SalesorderObject.Shipping_City__c}"
+                                                label="ShippingCity" onchange="javascript:applyTax()" style="width:33%" styleClass="restrictenterkey"
+                                            />
+                                        </div>
+                                        <br/>
+                                        <!--div class="bill-add-rows"><label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping State/Province:</label><apex:inputField id="s2" value="{!SalesorderObject.Shipping_State__c}" label="ShippingState" onchange="javascript:applyTax()"  /></div><br/-->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping State/Province
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span>: </label>
+                                            <apex:selectList size="1" value="{!SalesorderObject.Shipping_State__c}" multiselect="false" onchange="javascript:applyTax()"
+                                                id="s2" style="margin-left: 0px;margin-bottom:0px;width:33%;">
+                                                <apex:selectOptions value="{!stateList}" />
+                                            </apex:selectList>
+                                        </div>
+                                        <br/>
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping Zip/Postal Code
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="s3" value="{!SalesorderObject.Shipping_ZipCode__c}"
+                                                label="ShippingPostalCode" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!--  onchange="javascript:validateZipcode('{!$Component.s3}')" -->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Shipping Telephone
+                                                <span class="required_symbol" style="font-size: 15px !important;margin-left: 0px;">*</span> :</label>
+                                            <apex:inputField id="s4" value="{!SalesorderObject.Shipping_Phone__c}"
+                                                label="Phone" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!-- onchange="javascript:validateTelephone('{!$Component.s4}')"  -->
+                                        <div class="bill-add-rows">
+                                            <label class="bill-add-label" style="width: 45%;font-size: 12px;">Cell:</label>
+                                            <apex:inputField id="s5" value="{!SalesorderObject.Shipping_Mobile__c}"
+                                                label="Mobile" style="width:33%" styleClass="restrictenterkey" />
+                                        </div>
+                                        <br/>
+                                        <!-- onchange="javascript:validatecellnumber('{!$Component.s5}')"  -->
+                                    </fieldset>
+                                </div>
+                            </fieldset>
+                            <br/>
+                            <apex:pageMessages id="accounterrormsg"></apex:pageMessages>
+                            <div class="man-step3-continue-btn-div">
+                                <!-- <apex:commandButton value="Save & Continue" action="{!taxCalculation}" reRender="accountinfo,theiframediv,addressblocks,soInfo,accounttotals,accounttotals1,grandtotalidfld,mytext4" status="message" styleClass="manorder-updatebtn manstep3-continuebtn" oncomplete="focusSection4()" onclick="javascript: validateAddress('{!$Component.b0}', '{!$Component.b1}', '{!$Component.b2}', '{!$Component.b3}', '{!$Component.b4}', '{!$Component.s0}', '{!$Component.s1}','{!$Component.s2}', '{!$Component.s3}', '{!$Component.s4}')">
+                                            </apex:commandButton> -->
+
+                                <input type="button" onclick="validateAndSave()" value="Save & Continue" class="manorder-updatebtn manstep3-continuebtn"
+                                />
+
+                                <apex:actionFunction name="saveAndContinueJS" action="{!taxCalculation}" reRender="accountinfo,theiframediv,addressblocks,soInfo,accounttotals,accounttotals1,grandtotalidfld,mytext4"
+                                    status="message" oncomplete="focusSection4()" />
+                            </div>
+                        </div>
+                    </apex:pageBlock>
+                    <br/>
+                    <br/>
+                    <!--end of Address Information -->
+
+                    <!-- Nearer Delivery Company Map div -->
+                    <fieldset class="fsStyle">
+                        <legend class="legendStyle">Nearest Delivery Companies</legend>
+                        <apex:outputPanel id="theiframediv">
+                            <apex:iframe src="apex/SO_NearerDeliveryCompaniesVF?id={!SalesorderObject.id}" height="350px" width="100%" scrolling="true"
+                                id="theIframe" />
+                        </apex:outputPanel>
+                    </fieldset>
+                    <!-- Nearer Delivery Company Map div -->
+
+                    <!-- Order ETA -->
+                    <div class="col-md-12" style="padding:0;margin-top:20px">
+                        <fieldset class="fsStyle">
+                            <legend class="legendStyle">Order ETA</legend>
+                            <apex:outputPanel id="orderETA">
+                                <div class="col-md-6">
+                                    <div class="bill-add-rows">
+                                        <label class="bill-add-label" style="width: 45%;font-size: 12px;"> Order ETA: </label>
+                                        <apex:inputField value="{!SalesorderObject.Order_ETA__c}" style="height:27px !important;width:31%"
+                                        /> </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bill-add-rows">
+                                        <label class="bill-add-label" style="width: 45%;font-size: 12px;float:left"> Delivery Companies-Distance
+                                            <input type="text" id="mytext7" class="focus-section" style=" width: 10px !important;height: 10px !important; border-color: #fff !important;border-width: 0px !important; margin: 0;"
+                                            />
+                                            <apex:commandButton action="{!showDistance}" reRender="orderETA,mytext7" value="Show" oncomplete="focusSection7()" styleClass="manstep3-continuebtn man-order-showbtn"
+                                                style=" font-size: 13px !important;" /> &nbsp;:
+                                        </label>
+                                        <div style="width: 339px;float: left;">
+                                            <apex:outputField id="CompaniesDistance" value="{!SalesorderObject.Delivery_Companies_Distance__c}" style="display: inline-table;"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                        </fieldset>
+                    </div>
+                    <!-- Order ETA -->
+
+                    <!-- Total fields -->
+                    <apex:outputPanel id="accounttotals">
+
+                        <div style="margin-bottom: 10px; text-align: right;">
+                            <h5 style="font-size:15px;font-weight:bold">
+                                SubTotal :
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.Sub_Total__c}" />
+                                </apex:outputText>
+                            </h5>
+                        </div>
+                        <div style="margin-bottom: 10px; text-align: right;font-size:15px;">
+                            <h5 style="font-size:15px;font-weight:bold">
+                                Shipping &#38; Handling :
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.Shipping_Handle__c}" />
+                                </apex:outputText>
+                            </h5>
+                        </div>
+                        <div style="margin-bottom: 10px; text-align: right;font-size:15px;">
+                            <h5 style="font-size:15px;font-weight:bold">
+                                Tax Amount :
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.TaxAmount__c}" />
+                                </apex:outputText>
+                            </h5>
+                        </div>
+
+                        <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                            <h5 style="font-size:15px;font-weight:bold">
+                                Discount on Order:
+                                <apex:inputText value="{!SalesorderObject.DiscountAmount__c}" style="width:75px">
+                                    <apex:actionSupport event="onchange" action="{!updateOpp}" rerender="accounttotals" />
+                                </apex:inputText>
+                            </h5>
+                        </div>
+
+                        <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                            <h5 style="font-size:15px;font-weight:bold">
+                                Discount Amount:
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.Discount_AmountTotal__c}" />
+                                </apex:outputText>
+                            </h5>
+                        </div>
+
+                        <hr style="border:1px solid #9a9a9a;" />
+                        <div style="margin-bottom: 20px; text-align: right; font-size: 21px;">
+                            <h3 style="font-size:20px;font-weight:bold">
+                                Grand Total :
+                                <apex:outputText title="paymentMethodAmount" id="paymentMethodAmount" value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param id="paymentMethodParamid" value="{!SalesorderObject.Grand_Total__c}" />
+                                </apex:outputText>
+                            </h3>
+                        </div>
+
+                        <div style="margin-bottom: 20px; text-align: right;font-size: 21px;">
+                            <h3 style="font-size:20px;font-weight:bold">
+                                Total Paid:
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.Total_Paid__c}" />
+                                </apex:outputText>
+                            </h3>
+                        </div>
+
+                        <div style="margin-bottom: 20px; text-align: right;font-size: 21px;">
+                            <h3 style="font-size:20px;font-weight:bold">
+                                Total Due:
+                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" style="text-align: center;width:10%">
+                                    <apex:param value="{!SalesorderObject.Total_Due__c}" />
+                                </apex:outputText>
+                            </h3>
+                        </div>
+
+                    </apex:outputPanel>
+                    <!-- end of Total fields -->
+
+                    <!-- Payment Details -->
+                    <div class="col-md-12" style="padding:0;margin-top:20px">
+                        <fieldset class="fsStyle">
+                            <legend class="legendStyle">Payment Type</legend>
+                            <input type="text" id="mytextp1" class="focus-section" style=" width: 1px !important;height: 1px !important; border-color: #fff !important;border-width: 0px !important; margin: 0;"
+                            />
+                            <apex:pageblock id="paymentmessage">
+                                <div style="width:100%;float:left;margin-bottom: 13px;">
+                                    <apex:selectRadio value="{!paymentType}" onChange="show(this,1);" styleClass="pay-radiobtns">
+                                        <apex:selectOption id="pay1" itemLabel="Credit Card" itemValue="CreditCard"></apex:selectOption>
+                                        <apex:selectOption id="pay6" itemLabel="Manual Payment" itemValue="ManualPay"></apex:selectOption>
+                                        <apex:selectOption id="pay7" itemLabel="Cardknox" itemValue="Cardknox"></apex:selectOption>
+                                        <apex:selectOption id="pay8" itemLabel="Zibby By Affirm Pay" itemValue="Zibby by Affirm"></apex:selectOption>
+                                        <apex:selectOption id="pay2" itemLabel="Pay by Check" itemValue="Paybycheck"></apex:selectOption>
+                                        <apex:selectOption id="pay3" itemLabel="Send Paypal Invoice" itemValue="PaypalInvoice"></apex:selectOption>
+                                        <apex:selectOption id="pay5" itemLabel="Affirm Payment" itemValue="AffirmPay"></apex:selectOption>
+                                        <!-- <apex:selectOption id="pay4" itemLabel="Amazon Payment" itemValue="AmazonPay"></apex:selectOption> -->
+                                    </apex:selectRadio>
+                                </div>
+                                <div id="Credit1" class="chqClas table-responsive">
+                                    <!-- Credit Card -->
+                                    <div class="pay-sections-div">
+
+                                        <apex:outputPanel rendered="{!paymentMethodExisted}">
+                                            <!-- First row -->
+                                            <div class="row">
+                                                <div class="col-md-4">
+
+                                                    <div class="row">
+                                                        <div class="col-md-2">
+                                                            <label style="width:100%">Add </label>
+                                                            <apex:inputCheckbox value="{!hasCard4}" id="checkboxOneE">
+                                                                <apex:actionSupport event="onclick" oncomplete="enable4('{!$Component.amountidE}','{!SalesorderObject.Total_Due__c}',{!hasCard4})"
+                                                                    reRender="checkboxOneE,grandtotalidfld" status="message"
+                                                                />
+                                                            </apex:inputCheckbox>
+                                                        </div>
+
+                                                        <div class="col-md-4 mediastyle">
+                                                            <label>Amount</label>
+                                                            <!--apex:inputtext value="{!SalesorderObject.Grand_Total__c}" id="grandtotalidfld" style="display:none;"/-->
+                                                            <apex:inputfield value="{!paymentMethodVar4.Amount__c}" id="amountidE" styleClass="col-md-4 form-control payment-flds restrictenterkey"
+                                                            />
+                                                        </div>
+
+                                                        <div class="col-md-6" style="padding-left: 15px !important;">
+                                                            <label>Card Type</label>
+                                                            <br/>
+                                                            <apex:outputfield value="{!paymentMethodVar4.Card_Type__c}" styleClass="col-md-4 form-control textInput payment-flds1 " />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- second three -->
+                                                <div class="col-md-6">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <label>Credit Card Number</label>
+                                                            <br/>
+                                                            <apex:outputfield value="{!paymentMethodVar4.Encrypted_Card_Number__c}" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- second three-->
+
+                                            </div>
+                                        </apex:outputPanel>
+
+                                        <!-- First row -->
+                                        <apex:outputPanel >
+                                            <div class="row">
+                                                <div class="col-md-4">
+
+                                                    <div class="row">
+                                                        <div class="col-md-2">
+                                                            <label style="width:100%">Add </label>
+                                                            <apex:inputCheckbox value="{!hasCard1}" id="checkboxOne">
+                                                                <apex:actionSupport event="onclick" oncomplete="enable1('{!$Component.amountid}','{!SalesorderObject.Total_Due__c}',{!hasCard1})"
+                                                                    reRender="checkboxOne,grandtotalidfld" status="message" />
+                                                            </apex:inputCheckbox>
+                                                        </div>
+
+                                                        <div class="col-md-4 mediastyle">
+                                                            <label>Amount</label>
+                                                            <!--apex:inputtext value="{!SalesorderObject.Grand_Total__c}" id="grandtotalidfld" style="display:none;"/-->
+                                                            <apex:inputfield value="{!paymentMethodVar.Amount__c}" id="amountid" styleClass="col-md-4 form-control payment-flds restrictenterkey"
+                                                            />
+                                                        </div>
+
+                                                        <div class="col-md-6" style="padding-left: 15px !important;">
+                                                            <label>Card Type</label>
+                                                            <apex:inputfield id="input11" value="{!paymentMethodVar.Card_Type__c}" styleClass="col-md-4 form-control textInput payment-flds1 ">
+                                                                <apex:actionSupport event="onclick" oncomplete="clearCardDetails('{!$Component.input11}','{!$Component.input12}','{!$Component.input13}','{!$Component.input14}','{!$Component.input15}');"
+                                                                    reRender="checkboxOne,mytext1" />
+                                                            </apex:inputfield>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- second three -->
+                                                <div class="col-md-6">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <label>Credit Card Number</label>
+                                                            <apex:inputfield value="{!paymentMethodVar.Credit_Card_Number__c}" id="input12" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                                onchange="validatecard(this.value);javascript:validatecardnum('{!$Component.input12}','{!$Component.input22}','{!$Component.input32}')"
+                                                            />
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label>cvv</label>
+                                                            <apex:inputfield value="{!paymentMethodVar.Card_Verification_Number__c}" id="input13" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                                onchange="javascript:validatecvv('{!$Component.input13}','{!$Component.input11}')"
+                                                            />
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label>Expiration Month*</label>
+                                                            <apex:inputfield value="{!paymentMethodVar.Expiration_Month__c}" id="input14" styleClass="col-xs-4 form-control textInput payment-flds2"
+                                                                onchange="javascript:validateExpiration('{!$Component.input14}','{!$Component.input15}')"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- second three-->
+
+                                                <!-- third three -->
+                                                <div class="col-md-2">
+                                                    <div class="row">
+                                                        <div>
+                                                            <label>Expiration Year*</label>
+                                                            <!--<input class="col-xs-8 form-control" type="text"/>-->
+                                                            <apex:inputfield value="{!paymentMethodVar.Expiration_Year__c}" id="input15" styleClass="col-xs-8 form-control textInput payment-flds3"
+                                                                onchange="javascript:validateExpiration('{!$Component.input14}','{!$Component.input15}')"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- third three-->
+                                            </div>
+                                        </apex:outputPanel>
+
+                                        <!-- First row-->
+                                        <hr style="margin-top:0px ; margin-bottom: 10px;" />
+
+                                        <!-- second row -->
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="row">
+                                                    <div class="col-md-2">
+                                                        <label style="width:100%">Add </label>
+                                                        <apex:inputCheckbox value="{!hasCard2}" id="checkboxTwo">
+                                                            <apex:actionSupport event="onclick" oncomplete="enable2({!hasCard2})" reRender="checkboxTwo" status="message" />
+                                                        </apex:inputCheckbox>
+                                                    </div>
+
+                                                    <div class="col-md-4 mediastyle">
+                                                        <label>Amount</label>
+                                                        <apex:inputfield value="{!paymentMethodVar1.Amount__c}" id="input26" styleClass="col-md-4 form-control payment-flds restrictenterkey"
+                                                        />
+                                                    </div>
+
+                                                    <div class="col-md-6" style="padding-left: 15px !important;">
+                                                        <label>Card Type</label>
+                                                        <apex:inputfield id="input21" value="{!paymentMethodVar1.Card_Type__c}" styleClass="col-md-4 form-control textInput payment-flds1">
+                                                            <apex:actionSupport event="onclick" oncomplete="clearCardDetails('{!$Component.input21}','{!$Component.input22}','{!$Component.input23}','{!$Component.input24}','{!$Component.input25}');"
+                                                                reRender="checkboxOne,mytext1" />
+                                                        </apex:inputfield>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- second three -->
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <label>Credit Card Number</label>
+                                                        <!--<input class="col-xs-4 form-control" type="text"/> -->
+                                                        <apex:inputfield value="{!paymentMethodVar1.Credit_Card_Number__c}" id="input22" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                            onchange="validatecard(this.value);javascript:validatecardnum('{!$Component.input12}','{!$Component.input22}','{!$Component.input32}')"
+                                                        />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label>cvv</label>
+                                                        <!-- <input class="col-xs-4 form-control" type="text"/>-->
+                                                        <apex:inputfield value="{!paymentMethodVar1.Card_Verification_Number__c}" id="input23" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                            onchange="javascript:validatecvv('{!$Component.input23}','{!$Component.input21}')"
+                                                        />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label>Expiration Month*</label>
+                                                        <!-- <input class="col-xs-4 form-control" type="text"/> -->
+                                                        <apex:inputfield value="{!paymentMethodVar1.Expiration_Month__c}" id="input24" styleClass="col-xs-4 form-control textInput payment-flds2"
+                                                            onchange="javascript:validateExpiration('{!$Component.input24}','{!$Component.input25}')"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- second three-->
+
+                                            <!-- third three -->
+                                            <div class="col-md-2">
+                                                <div class="row">
+                                                    <div>
+                                                        <label>Expiration Year*</label>
+                                                        <!--<input class="col-xs-8 form-control" type="text"/>-->
+                                                        <apex:inputfield value="{!paymentMethodVar1.Expiration_Year__c}" id="input25" styleClass="col-xs-8 form-control textInput payment-flds3"
+                                                            onchange="javascript:validateExpiration('{!$Component.input24}','{!$Component.input25}')"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- third three-->
+                                        </div>
+                                        <!-- second row -->
+                                        <hr style="margin-top:0px ; margin-bottom: 10px ;" />
+
+                                        <!-- third row -->
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="row">
+                                                    <div class="col-md-2">
+                                                        <label style="width:100%">Add </label>
+                                                        <apex:inputCheckbox value="{!hasCard3}" id="checkboxThree">
+                                                            <apex:actionSupport event="onclick" oncomplete="enable3({!hasCard3})" reRender="checkboxThree" status="message" />
+                                                        </apex:inputCheckbox>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <label>Amount</label>
+                                                        <apex:inputfield value="{!paymentMethodVar2.Amount__c}" id="input36" styleClass="col-md-4 form-control payment-flds restrictenterkey"
+                                                        />
+                                                    </div>
+
+                                                    <div class="col-md-6" style="padding-left: 15px !important;">
+                                                        <label>Card Type</label>
+                                                        <apex:inputfield id="input31" value="{!paymentMethodVar2.Card_Type__c}" styleClass="col-md-4 form-control textInput payment-flds1">
+                                                            <apex:actionSupport event="onclick" oncomplete="clearCardDetails('{!$Component.input31}','{!$Component.input32}','{!$Component.input33}','{!$Component.input34}','{!$Component.input35}');"
+                                                                reRender="checkboxOne,mytext1" />
+                                                        </apex:inputfield>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- second three -->
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <label>Credit Card Number</label>
+                                                        <apex:inputfield value="{!paymentMethodVar2.Credit_Card_Number__c}" id="input32" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                            onchange="validatecard(this.value);javascript:validatecardnum('{!$Component.input12}','{!$Component.input22}','{!$Component.input32}')"
+                                                        />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label>cvv</label>
+                                                        <apex:inputfield value="{!paymentMethodVar2.Card_Verification_Number__c}" id="input33" styleClass="col-xs-4 form-control textInput payment-flds1 restrictenterkey"
+                                                            onchange="javascript:validatecvv('{!$Component.input33}','{!$Component.input31}')"
+                                                        />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label>Expiration Month*</label>
+                                                        <!-- <input class="col-xs-4 form-control" type="text"/> -->
+                                                        <apex:inputfield value="{!paymentMethodVar2.Expiration_Month__c}" id="input34" styleClass="col-xs-4 form-control textInput payment-flds2"
+                                                            onchange="javascript:validateExpiration('{!$Component.input34}','{!$Component.input35}')"
+                                                        />
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- second three-->
+
+                                            <!-- third three -->
+                                            <div class="col-md-2">
+
+                                                <div class="row">
+                                                    <div>
+                                                        <label>Expiration Year*</label>
+                                                        <!--<input class="col-xs-8 form-control" type="text"/>-->
+                                                        <apex:inputfield value="{!paymentMethodVar2.Expiration_Year__c}" id="input35" styleClass="col-xs-8 form-control textInput payment-flds3"
+                                                            onchange="javascript:validateExpiration('{!$Component.input34}','{!$Component.input35}')"
+                                                        />
+
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                            <!-- third three-->
+                                        </div>
+                                        <!-- third row -->
+
+                                    </div>
+                                    <!-- Credit Card End -->
+                                </div>
+                                <div id="PTCheque1" class="chqClas">
+                                    <div class="pay-sections-div">
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="col-xs-6 form-group">
+                                                    <label>Check Type</label>
+                                                    <apex:inputfield required="false" value="{!paymentMethodVar.Check_Type__c}" styleClass="form-control" />
+
+                                                </div>
+                                                <div class="col-xs-6 form-group">
+                                                    <label>Account Name</label>
+                                                    <apex:inputfield id="accname" required="false" value="{!paymentMethodVar.Name_on_Account__c}" styleClass="form-control restrictenterkey"
+                                                        onchange="javascript:validateAccountName('{!$Component.accname}')" />
+
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="col-xs-6 form-group">
+                                                    <label>Routing Number</label>
+                                                    <apex:inputfield label="Routing Number:" required="false" value="{!paymentMethodVar.Routing_Number__c}" styleClass="form-control rnum restrictenterkey"
+                                                    />
+
+                                                </div>
+                                                <div class="col-xs-6 form-group">
+                                                    <label>Account Number</label>
+                                                    <apex:inputfield label="Account Number:" required="false" value="{!paymentMethodVar.Account_Number__c}" styleClass="form-control num restrictenterkey"
+                                                    />
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div id="PTManual1" class="chqClas">
+                                    <div class="pay-sections-div">
+                                        <apex:outputText style="font-style:italic" value="You have selected Manual Payment">
+                                        </apex:outputText>
+                                    </div>
+                                </div>
+                                <div id="Cardknox1" class="chqClas">
+                                    <div class="pay-sections-div">
+                                        <apex:outputText style="font-style:italic" value="You have selected Cardknox">
+                                        </apex:outputText>
+                                    </div>
+                                </div>
+                                <div id="Zibby1" class="chqClas">
+                                    <div class="pay-sections-div">
+                                        <apex:outputText style="font-style:italic" value="You have selected Zibyy by Affirm">
+                                        </apex:outputText>
+                                    </div>
+                                </div>
+                                <div id="Paypal1" class="chqClas">
+                                    <div class="pay-sections-div">
+                                        <apex:outputText style="font-style:italic" value="You have selected Paypal Invoice">
+                                        </apex:outputText>
+                                    </div>
+                                </div>
+                                <div id="affirm1" class="chqClas">
+                                    <div class="pay-sections-div">
+                                        <apex:outputText style="font-style:italic" value="You have selected Affirm Payment">
+                                        </apex:outputText>
+                                    </div>
+                                </div>
+                                <!-- <div id="amazon1" class="chqClas">
+                                        <div class="pay-sections-div">
+                                            <apex:outputText style="font-style:italic" value="You have selected Amazon Payment">
+                                            </apex:outputText>
+                                        </div>
+                                    </div> -->
+                            </apex:pageblock>
+                        </fieldset>
+                    </div>
+                    <!-- Payment Details -->
+
+                    <div class="col-md-12" style="padding:0px;margin-top:20px">
+                        <fieldset class="fsStyle">
+                            <legend class="legendStyle">Comments Section</legend>
+                            <div style="width: 50%;float: left;margin: 0 auto;">
+                                <div style="width: 25%;float: left;margin: 0 auto;">
+                                    <label class="bill-add-label" style="width: 100%;font-size: 12px;">Internal Comments :</label>
+                                </div>
+                                <apex:inputField value="{!SalesorderObjectController.Comments__c}" style="width:60%;" styleClass="manualorder-textarea"
+                                />
+                            </div>
+                            <div style="width: 50%;float: left;margin: 0 auto;">
+                                <div style="width: 25%;float: left;margin: 0 auto;">
+                                    <label class="bill-add-label" style="width: 100%;font-size: 12px;">Customer Comments :</label>
+                                </div>
+                                <apex:inputField value="{!SalesorderObjectController.Customer_Comments__c}" style="width:60%;"
+                                    styleClass="manualorder-textarea" />
+                            </div>
+                            <!-- Notify customer checkbox -->
+                            <div style="text-align: right; font-size: 12px;width: 100%;float: right;margin-top:20px">
+                                <p>
+                                    <apex:inputCheckbox value="{!SalesorderObjectController.Notify_Customer_with_Email__c}" selected="true" />&nbsp; Notify Customer by Email
+                                </p>
+                                <input type="text" id="mytext8" class="focus-section" style=" width: 0px !important;height: 0px !important; border-color: #6B3D3D !important;border-width: 0px !important; margin: 0;margin-top:-8px;"
+                                />
+                            </div>
+                        </fieldset>
+                        <!-- Notify customer checkbox -->
+                    </div>
+
+                    <apex:pageBlock >
+                        <apex:pageMessages id="errormessage2" />
+                    </apex:pageBlock>
+                    <div class="man-sales-save-btn">
+                        <apex:commandButton value="Submit Order" id="Submitorderbtn" oncomplete="show(t,rno),focusSection8()" reRender="mytext8,messagePannelId,errormessage,errormessage1,errormessage2"
+                            action="{!submitOrder}" onclick="window.onbeforeunload = null;" styleClass="manstep3-savebtn" status="message"
+                        />
+                        <apex:commandButton value="Cancel" immediate="true" action="{!cancelSalesOrder}" styleClass="manstep3-cancelbtn" style="width: 149px;margin-right:20px;"
+                        />
+                    </div>
+                </div>
+            </div>
+        </body>
+
+        </html>
+    </apex:form>
+</apex:page>

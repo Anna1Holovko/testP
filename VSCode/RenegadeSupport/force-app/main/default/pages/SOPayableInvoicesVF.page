@@ -1,0 +1,23 @@
+<apex:page standardController="Sales_Order__c">
+     <apex:includeLightning />
+		
+     <div id="PayeableInvoiceApp" />
+
+     <script>
+    
+    $Lightning.use("c:SOpayableInvoicesApp", function() {
+        
+        $Lightning.createComponent("c:SOPayableInvoiceList",
+                                   {"recordId" : "{!Sales_Order__c.Id}"},
+                                   "PayeableInvoiceApp",
+                                   function(cmp) {
+                                       console.log("SOPayableInvoiceList");
+                                   }
+                                   
+                                  );
+        
+    });
+
+    </script>
+	
+</apex:page>

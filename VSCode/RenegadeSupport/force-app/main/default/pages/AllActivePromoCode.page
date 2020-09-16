@@ -1,0 +1,3 @@
+<apex:page >
+    <apex:enhancedList type="Promotions__c" height="400" rowsPerPage="10" customizable="false"/>
+</apex:page>

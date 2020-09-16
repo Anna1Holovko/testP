@@ -1,0 +1,283 @@
+<apex:page standardController="Sales_Order__c" extensions="SalesOrderPaymentsController" action="{!displayPayments}" sidebar="false"
+    showHeader="false">
+    <html>
+
+    <head>
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css" rel="stylesheet" />
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <style>
+            body {
+                font-size: 13px;
+            }
+
+            h5 {
+                line-height: 1.5;
+            }
+
+            .bPageBlock {
+                border-top: 0px !important
+            }
+
+            body .bPageBlock,
+            body .secondaryPalette.bPageBlock {
+                border-bottom: 0px !important;
+                border-left: 0px !important;
+                border-right: 0px !important;
+            }
+
+            body .bPageBlock {
+                margin-bottom: 0px !important;
+            }
+
+            .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+                margin: 0px 12px 0px !important;
+            }
+
+            .card-headings {
+                color: #4E4E4E;
+                text-shadow: 1px 1px 1px #B7B7B7;
+            }
+
+            .img-wrap img {
+                max-width: 100%;
+            }
+
+            .cardknoxImage {
+                height: auto;
+                width: 71px;
+            }
+
+            }
+
+        </style>
+    </head>
+
+    <body>
+        <apex:form >
+            <apex:pageMessages id="messageId"></apex:pageMessages>
+            <apex:actionFunction name="paraFunction" action="{!displayPayments}" rerender="paylist,test2,test1,messageId">
+                <apex:param id="aname" assignTo="{!salesorderid}" name="salesorderid" value="" />
+            </apex:actionFunction>
+        </apex:form>
+        <div class="container-fluid">
+            <div class="row" id="thumRow">
+                <apex:pageBlock id="paylist">
+                    <apex:repeat value="{!paymentList}" var="pay">
+                        <div class="col-sm-4">
+                            <div class="thumbnail" style=" {!IF(pay.Payment_Type__c =='Manual Payment' || pay.Payment_Type__c =='Affirm' || pay.Payment_Type__c =='Affirm: Buy Now with 3 Easy Payments' || 
+                            pay.Payment_Type__c =='Cardknox' || pay.Payment_Type__c =='Zibby by Affirm', 'width:300px', 'width:100%')}  ;float:left;background: #F7F7F7;box-shadow: 3px 3px 5px #B5B5B5;">
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='PayPal' || pay.Payment_Type__c =='PayPal Express Checkout',true,false)}"
+                                    style="float:left;width:100%">
+                                    <div style="width:100%;float:left;">
+                                        <div style="width: 40%;float:left;padding: 20px 10px;">
+                                            <apex:image value="{!$Resource.paypal}" width="80px" />
+                                        </div>
+                                        <div style="width: 60%;float:left;padding: 25px 15px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Credit Card (Authorize.net)' || pay.Payment_Type__c =='Credit Card',true,false)}">
+                                    <div style="width:100%;float:left;">
+                                        <div style="width: 32%;float:left;padding: 32px 10px;">
+                                            <apex:image value="{!if(pay.Card_Type__c=='MasterCard','/resource/mastercard',if(pay.Card_Type__c=='American Express','/resource/americanexpress',if(pay.Card_Type__c=='Visa','/resource/visa',if(pay.Card_Type__c=='Discover','/resource/discover','no-image'))))}"
+                                                width="80px" />
+                                        </div>
+                                        <div style="width: 68%;float:left;padding: 12px 0px 12px 6px;">
+                                            <a style="color: #015ba7;font-weight: bold;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.Card_Type__c}" />
+                                            </b>
+                                            <br/>
+                                            <b class="card-headings">Card #: </b>
+                                            <apex:outputText value="{!pay.Card_Number__c}" />
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">AVS Response: </b>
+                                            <apex:outputText value="{!pay.AVS_Response__c}" />
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Manual Payment',true,false)}">
+                                    <div style="width:85%!important;float:left;">
+                                        <div style="float:left;padding: 12px 10px;">
+                                            <apex:image value="{!$Resource.paymentmethod}" />
+                                        </div>
+                                        <div style="width: 60%;float:left;padding: 25px 15px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+                                            <apex:outputPanel rendered="{!(pay.Payment_Method__r.Manual_Payment_Type__c != null)}">
+                                            <b class="card-headings">Manual Payment Type: </b>
+                                            <apex:outputText value="{!pay.Payment_Method__r.Manual_Payment_Type__c}" />
+                                            <!-- <br/> -->
+                                            </apex:outputPanel>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Cardknox',true,false)}">
+                                    <div style="width:100%;float:left;">
+                                        <div style="float:left;padding: 12px 10px;">
+                                            <apex:image value="{!$Resource.cardknoximage}" styleClass="cardknoxImage" />
+                                        </div>
+                                        <div style="width: 60%;float:left;padding: 25px 15px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Zibby by Affirm',true,false)}">
+                                    <div style="width:100%;float:left;">
+                                        <div style="float:left;padding: 12px 10px;">
+                                            <apex:image style="width: 130px;" value="{!$Resource.Zibby_by_Affirm}"/>
+                                        </div> 
+                                        <div style="width: 40%;float:left;padding: 25px 15px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='CheckoutFinance',true,false)}">
+                                    <div>
+                                        <div class="img-wrap" style="width: 40%;float:left;padding: 12px 10px; height: 88px;display: inline-flex;align-items: center;">
+                                            <apex:image value="{!$Resource.CheckoutFinanceImage}" />
+                                        </div>
+                                        <div class="text-wrap" style="width: 60%;float:left; padding: 25px 15px">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+
+
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Affirm' || pay.Payment_Type__c =='Affirm: Buy Now with 3 Easy Payments',true,false)}">
+                                    <div style="width:100%;float:left;">
+                                        <div style="float:left;padding: 12px 10px;">
+                                            <apex:image value="{!$Resource.Affirm}" />
+                                        </div>
+                                        <div style="width: 60%;float:left;padding: 25px 15px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                            <b class="card-headings">
+                                                <apex:outputText value="{!pay.AVS_Response__c}" />
+                                            </b>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                <!--<apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Amazon Payment' || pay.Payment_Type__c =='Amazon Payments',true,false)}">
+                                        <div style="width:100%;float:left;">
+                                            <div style="float:left;padding: 12px 10px;">
+                                                <apex:image value="{!$Resource.AmazonPay}"/>
+                                            </div> 
+                                            <div style="width: 60%;float:left;padding: 25px 15px;">
+                                                <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                <!--
+                                                <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank"> <apex:outputText value="{!pay.Payment_Type__c}"/></a><br/>
+                                                <b class="card-headings">Amount: </b>$<apex:outputText value="{!pay.Amount__c}" /><br/>
+                                                <b class="card-headings"><apex:outputText value="{!pay.AVS_Response__c}" /></b>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>-->
+
+                                <apex:outputPanel rendered="{!IF(pay.Payment_Type__c =='Check Payments',true,false)}">
+                                    <div style="width:100%;float:left;">
+                                        <div style="float:left;padding: 12px 10px;">
+                                            <apex:image value="{!$Resource.paymentmethod}" />
+                                        </div>
+                                        <div style="width: 68%;float:left;padding: 1px 0px;">
+                                            <!-- <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">{!pay.Name}</a>  <br/> -->
+                                            <a style="color: #015ba7;" href="/{!pay.Payment_Method__c}" target="_blank">
+                                                <apex:outputText value="{!pay.Payment_Type__c}" />
+                                            </a>
+                                            <br/>
+                                            <b class="card-headings">Check Type: </b>
+                                            <apex:outputText value="{!pay.Payment_Method__r.Check_Type__c}" />
+                                            <br/>
+                                            <b class="card-headings">Name on Account: </b>
+                                            <apex:outputText value="{!pay.Payment_Method__r.Name_on_Account__c}" />
+                                            <br/>
+                                            <b class="card-headings">Account Number: </b>
+                                            <apex:outputText value="{!pay.Payment_Method__r.Account_Number__c}" />
+                                            <br/>
+                                            <b class="card-headings">Routing Number: </b>
+                                            <apex:outputText value="{!pay.Payment_Method__r.Routing_Number__c}" />
+                                            <br/>
+                                            <b class="card-headings">Amount: </b>$
+                                            <apex:outputText value="{!pay.Amount__c}" />
+                                            <br/>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </div>
+                    </apex:repeat>
+                </apex:pageBlock>
+            </div>
+        </div>
+    </body>
+
+    </html>
+</apex:page>

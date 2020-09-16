@@ -1,0 +1,61 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:hasRecordId"
+  controller="ManageShipmentLineItemsController">
+  <!--GLOBAL ATTRIBUTES-->
+  <aura:attribute name="height" type="String" access="global" />
+  <aura:attribute name="recordId" type="String" />
+  <aura:attribute name="pageType" type="String" />
+  <aura:attribute name="isClassic" type="String" default="false" />
+  <aura:attribute name="visualforceURL" type="String" />
+
+  <!--PRIVATE ATTRIBUTES-->
+  <aura:attribute name="columnsData" type="List" />
+  <aura:attribute name="shipmentLineList" type="List" />
+  <aura:attribute name="checkedList" type="List" />
+  <aura:attribute name="salesOrderId" type="String" />
+  <aura:attribute name="isSplitable" type="Boolean" />
+  <aura:attribute name="checkAll" type="Boolean" default="false" />
+  <aura:attribute name="loading" type="Boolean" default="true" />
+  <aura:attribute name="fieldDisplayingSetting" type="Map"/>
+  
+  <!--HANDLERS AND EVENTS-->
+  <aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+  <aura:handler name="change" value="{!v.checkedList}" action="{!c.checkedListChange}" />
+
+  <aura:handler name="closeEvent" event="c:ManageShipmentLineItemsCloseEvent" action="{!c.handleCloseEvent}" />
+
+  <lightning:overlayLibrary aura:id="overlayLib" />
+  <lightning:navigation aura:id="navService" />
+
+  <div style="{!'height: '+ v.height + '; overflow: unset;'}">
+    <div aura:id="modalBlock" />
+    <!--SPINNER-->
+    <lightning:spinner variant="brand" size="large" aura:id="mainSpinner" class="spinnerBackground " />
+    <div class="buttons-wrap">
+      <lightning:buttonGroup class="slds-chat-bookend">
+        <aura:if isTrue="{!v.checkedList.length > 0}">
+          <lightning:button label="Update" onclick="{!c.update}" />
+          <aura:if isTrue="{!v.isSplitable}">
+            <lightning:button label="Split" onclick="{!c.split}" />
+          </aura:if>
+          <aura:if isTrue="{!v.pageType != 'Shipment__c'}">
+            <lightning:button label="New Replacement PO" onclick="{!c.goToNewReplacementPO}" />
+            <lightning:button label="New Parts PO" onclick="{!c.goToNewPartPO}" />
+          </aura:if>
+        </aura:if>
+      </lightning:buttonGroup>
+    </div>
+    <!--DATATABLE-->
+    <div class="table-wrap" style="max-height:calc(100% - 49px)">
+      <aura:if isTrue="{!and(!!v.shipmentLineList, v.shipmentLineList.length > 0)}">
+        <c:CustomDataTable_Component lines="{!v.shipmentLineList}" columns="{!v.columnsData}"
+          checkedList="{!v.checkedList}" showCheckboxColumn="true" checkAll="{!v.checkAll}" />
+        <aura:set attribute="else">
+          <aura:if isTrue="{! !v.loading}">
+            No shipment line items to present
+          </aura:if>
+        </aura:set>
+      </aura:if>
+    </div>
+  </div>
+</aura:component>

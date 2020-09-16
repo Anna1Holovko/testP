@@ -1,0 +1,415 @@
+<apex:page controller="bolcontroller" showHeader="false" sidebar="false" cache="true" applyBodyTag="false" applyHtmlTag="false" renderAs="pdf">
+    <html>
+        <head> 
+            <title>Renegade BOL page</title>
+            <style>
+                .logo_div{
+                width:175px !important;
+                height:65px !important;
+                padding:0 !important;
+                border:0px solid #000 !important;
+                }
+                .logo_div img{
+                width:175px !important;
+                height:65px !important;
+                border:0px solid #000 !important;
+                float:left;
+                }
+                body{
+                line-height:1.2;
+                padding:left:0px;
+                font-family:Verdana;
+                font-size:12px;
+                }
+                .header-login a:last-child {
+                margin: 0 10px 0 35px;
+                }
+                .table-bordered {
+                border-collapse : collapse;
+                font-size : .9em;
+                page-break-inside:auto; 
+                }
+                .table-bordered tr{page-break-inside:avoid; page-break-after:auto;}
+                thead>tr>th {
+                vertical-align: bottom;
+                border:1px solid #000;
+                border-spacing: 0;
+                text-align:center;
+                border-collapse: collapse;
+                background : #d3d3d3;
+                color:#000;
+                page-break-inside:avoid; page-break-after:auto; 
+               
+                }
+                 tfoot>tr>th {
+                vertical-align: bottom;
+                border:1px solid #000;
+                border-spacing: 0;
+                text-align:center;
+                border-collapse: collapse;
+                background : #d3d3d3;
+                color:#000;
+                page-break-inside:avoid; page-break-after:auto; 
+               
+                }
+                
+                td {
+                vertical-align: bottom;
+                border: 1px solid #000;
+                border-spacing: 0;
+                border-collapse: collapse;
+                 padding:2px 0px;
+                }
+                tbody>tr>th{
+                vertical-align: bottom;
+                border:1px solid #000;
+                border-spacing: 0;
+                text-align:center;
+                border-collapse: collapse;
+                background : #d3d3d3;
+                color:#000;
+                page-break-inside:avoid; page-break-after:auto; 
+                }
+                .echoArea>td{
+                padding:10px;
+                }
+                .htmlDetailElementTable td {
+                padding: 1px;
+                border: none;
+                }
+                .extra_table{
+                border:0px solid #fff;
+                border-collapse : collapse;
+                font-size : .7em;
+                }
+                .extra_table>td {
+                vertical-align: bottom;
+                border: 0px solid #000;
+                border-spacing: 0;
+                border-collapse: collapse;
+                text-align:center;
+                }
+                .sfdc_richtext{
+                text-align: left;
+                }
+                @page{
+                size:A4 portrait;
+                margin:4% 2.5%;
+                
+                @top-right {
+               
+                font-family:Verdana;
+                font-size:12px;
+                content: "page "  counter(page)  " of " counter(pages);
+                }
+                
+                
+               <!-- .pagenumber:before {
+                content: counter(page)  " of " counter(pages);
+                } -->
+                }
+                p{margin:0 auto;}
+                .para_style{padding:2px 0px;}
+                
+               
+                .header_sections1{width:19.5%;float:left;}
+                .header_sections2{width:60%;float:left;text-align:center;font-weight:bold;font-size:14px}
+                .header_sections3{width:19.5%;float:left;text-align:right;}
+                tr.second_row_headings th{padding:3px}
+                tr.second_row_headings td{padding:5px}
+               
+            </style>
+        </head>  
+        <body> 
+            <!-- main-wrapper starts here --->
+            <div style="width:100%;float:left;margin-bottom:20px;">
+                <div class="header_sections1"> 
+                    Date: {!MONTH(TODAY())}/{!DAY(TODAY())}/{!YEAR(TODAY())} <br/>
+                    ORDER NUMBER: <b>{!shipment.Related_Sales_Order__r.Magento_order_No__c}</b>
+                </div>
+                <div class="header_sections2">
+                    BILL OF LADING – RENEGADE FURNITURE
+                </div>
+                <div class="header_sections3">
+                    <span class="pagenumber"/>
+                </div>
+            </div>
+            <div id="main-wrapper" style="width:100%;float:left">
+                <!-- table for Customer and Shipment Information -->
+                <div class="table-responsive" style="width:100%;">
+                    <table width="100%" class="table-bordered">
+                        <tbody>
+                            <tr>
+                                <th width="50%" style="padding:3px 0px">SHIP FROM </th>
+                                <td rowspan="2" style="text-align:center;vertical-align:TOP;opacity:0.1">DELIVERY NOTES</td>
+                            </tr>
+                            <tr>  
+                                <td style="font-size:14px;">
+                                    {!shipment.Purchase_Order__r.Ship_From__r.name} {!if(shipment.Purchase_Order__r.Ship_From__r.name!=null,', ','')}<br/>
+                                    {!shipment.Purchase_Order__r.Ship_From__r.BillingStreet}{!if(shipment.Purchase_Order__r.Ship_From__r.BillingStreet!=null,', ','')}<br/>
+                                    {!shipment.Purchase_Order__r.Ship_From__r.BillingCity}{!if(shipment.Purchase_Order__r.Ship_From__r.BillingCity!=null,', ','')}
+                                    {!shipment.Purchase_Order__r.Ship_From__r.BillingState}&nbsp; {!shipment.Purchase_Order__r.Ship_From__r.BillingPostalCode}<br/>
+                                    {!shipment.Purchase_Order__r.Ship_From__r.Phone}
+                                </td>
+                            </tr> 
+                        </tbody>
+                    </table>
+                    <table width="100%" class="table-bordered">
+                        <tbody>
+                            <tr>
+                                <th width="50%" style="padding:3px 0px">SHIP TO </th>
+                                <td rowspan="2" style="text-align:left;vertical-align:top;font-weight:bold;font-size:13px;padding:5px;">
+                                   Carrier Name :<br/><br/>
+                                    <p style="text-transform: uppercase;font-size: 14px !important;font-family: calibri !important;">
+                                        <apex:outputText value=" {!shipment.Carrier__c}" rendered="{!if(shipment.Carrier__c!='',true,false)}"></apex:outputText> 
+                                        <apex:outputText value=" {!shipment.Trucking_Company_name__c}" rendered="{!if((shipment.recordtype.name=='Ship Via Delivery Company' || shipment.Carrier__c==''),true,false)}"></apex:outputText> 
+                                    </p> 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="50%">
+                                    <apex:outputPanel rendered="{!IF(OR(AND(shipment.recordtype.name=='Ship Via Delivery Company', shipment.Carrier__c==''), AND(shipment.recordtype.name=='Ship To HUB',OR(shipment.Carrier__c=='',shipment.Carrier__c=='')),shipment.Carrier__c==''),true,false)}">
+                                        <div style="width:100%;font-size:14px;">
+                                            {!shipment.Delivery_Company__r.Name}{!if(shipment.Delivery_Company__r.Name!=null,', ','')}<br/>
+                                            {!shipment.Delivery_Company__r.ShippingStreet}{!if(shipment.Delivery_Company__r.ShippingStreet!=null,', ','')}<br/>
+                                            {!shipment.Delivery_Company__r.ShippingCity}{!if(shipment.Delivery_Company__r.ShippingCity!=null,', ','')}
+                                            {!shipment.Delivery_Company__r.ShippingState}&nbsp; {!shipment.Delivery_Company__r.ShippingPostalcode}<br/>
+                                            {!shipment.Delivery_Company__r.Phone}
+                                            
+                                            <!-- {!shipment.Delivery_Company_Name__c} -->
+                                        </div>
+                                    </apex:outputPanel>
+                                    
+                                    <apex:outputPanel rendered="{!IF(OR(shipment.recordtype.name=='Direct Shipment', shipment.Carrier__c!=''),true,false)}">
+                                        <div style="width:100%;font-size:14px;">
+                                            {!shipment.Related_Sales_Order__r.Ship_to__c}{!if(shipment.Related_Sales_Order__r.Ship_to__c!=null,', ','')}<br/>
+                                            {!shipment.Related_Sales_Order__r.Shipping_Street__c}{!if(shipment.Related_Sales_Order__r.Shipping_Street__c!=null,', ','')}<br/>
+                                            {!shipment.Related_Sales_Order__r.Shipping_City__c}{!if(shipment.Related_Sales_Order__r.Shipping_City__c!=null,', ','')}<br/>
+                                            {!shipment.Related_Sales_Order__r.Shipping_State__c}&nbsp;
+                                            {!shipment.Related_Sales_Order__r.Shipping_ZipCode__c}<br/>
+                                            {!shipment.Related_Sales_Order__r.Shipping_Phone__c}
+                                        </div>
+                                    </apex:outputPanel>
+                                    
+                                </td>
+                                <!--  <td width="50%">
+<div style="width:100%">
+<div style="width:30%;text-align:right">
+Carrier Name:<br/>
+SCAC:<br/>
+Trailer Number:<br/>
+Seal Number(s):
+</div>
+<div style="width:50%">  </div>
+</div>
+</td> -->
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table width="100%" class="table-bordered">
+                        <tbody>
+                            <tr>
+                                <th style="padding:3px 0px">THIRD PARTY FREIGHT CHARGES BILL TO </th>
+                                <td rowspan="2" style="text-align:center;vertical-align:TOP;opacity:0.1">CUSTOMER NOTES</td>
+                            </tr>
+                            <tr>
+                                <td width="50%" style="font-size:14px;">
+                                    Renegade Furniture <br/> 333 Washington Ave.<br/> Cedarhurst, NY 11516<br/>(800) 974-5255
+                                </td>
+                                
+                            </tr>
+                            <!--<tr>
+<td rowspan="2" style="vertical-align:top"><b>Special Instructions : </b></td>
+<td><p class="para_style"> <b> Freight Charge Terms</b>&nbsp;(Freight Charges are COLLECT unless marked otherwise) :</p>
+<p class="para_style"> Prepaid <img src="/img/checkbox_unchecked.gif"/> &nbsp;&nbsp;  Collect <img src="/img/checkbox_unchecked.gif"/> &nbsp;&nbsp; Third Party<img src="/img/checkbox_unchecked.gif"/> </p>
+</td>
+
+</tr>
+<tr>
+<td> <img src="/img/checkbox_unchecked.gif"/> Master Bill of Lading with attached underlying Bills of Lading </td>
+</tr>-->
+                            
+                        </tbody>
+                    </table>
+                </div><br/> <br/>
+                <!-- table for Customer and Shipment Information -->
+                
+                <!-- table for Customer Order Information -->
+                <!--  <div class="table-responsive" style="width:100%">
+<br/> <h4 style="margin-bottom:0px;text-align:center;width:100%">Customer Order Information</h4>
+<table width="100%" class="table-bordered">
+<thead>
+<tr>
+<th> Transaction # </th>
+<th>Reference #</th>
+<th>PO #</th>
+<th colspan="2">Pallet/Slip</th>
+<th>Retailer</th>
+<th>Dept.</th>
+<th>Phone</th>
+</tr>      
+</thead>
+<tbody>
+
+<!-- <apex:repeat value="{!precs}" var="QI" rendered="{!NOT(ISNULL(precs))}" > -->
+                <!--          <tr>
+<td>14277</td>
+<td>292675</td>
+<td>292675</td>
+<td>Y </td>
+<td>N</td>
+<td>0</td>
+<td>Dept</td>
+<td>800-234-2345</td>
+</tr>
+<!--<apex:repeat value="{!precs[QI]}" var="I">
+<tr border="2">
+<td colspan="3" width="20%" style="text-align:left;"><i>Extra:</i>&nbsp; {!I.Extra__r.Name}</td>
+<!--<td width="30%" style="text-align:left;"></td>-->
+                <!--  <td width="10%">{!I.Quantity__c}</td>
+<td width="10%" >${!I.Unit_price__c}</td>
+<!--<td width="10%">{!I.Sub_Total__c}</td>
+<td width="10%">{!I.Discount__c}</td>-->
+                <!-- <td width="10%">${!I.Total__c}</td>
+</tr>  
+</apex:repeat> -->
+                <!--  </apex:repeat> -->
+                <!--    <thead>
+<tr >
+<th>Total Cube: </th>
+<th>88</th>
+<th colspan="6">Additional Shipper Notes</th>
+
+</tr>
+</thead>
+</tbody>
+</table>
+</div>
+<!-- table for Customer Order Information -->
+                
+                <!-- table for Carrier Information -->
+                <div class="table-responsive" style="width:100%">
+                    
+                    <table width="100%" class="table-bordered">
+                        <thead>
+                            <tr>
+                                <th colspan="7" style="padding:3px 0px;text-transform: uppercase;">Delivery Information</th>
+                            </tr>
+                        </thead>
+                        <thead>
+                            <tr class="second_row_headings">
+                                <th colspan="2" width="20%"><b>Handling Unit</b></th>
+                                <th><b>Package</b></th>
+                                <th colspan="2" width="50%"></th>
+                                <th colspan="2">LTL Only</th>
+                            </tr>      
+                        </thead>
+                        <tbody>
+                            <tr class="second_row_headings">
+                                <td width="7%"><b> Qty. </b> </td>
+                                <td width="10%"><b>Type </b></td>
+                                <td width="10%"><b>Box Info</b></td>
+                                <td width="13%"><b>Weight &nbsp;(In LBS.)</b></td>
+                                <td width="10%"><b>Cubed ft.</b></td>
+                                <td colspan="5"> <b>Furniture Description </b></td>
+                            </tr>
+                            
+                            <apex:repeat value="{!shplineitems}" var="ShpItem" rendered="{!NOT(ISNULL(shplineitems))}" >
+                                <tr class="second_row_headings">
+                                    <td style="text-align:center;width:7%">{!ShpItem.Shipment_Product_Quantity__c}</td>
+                                    <td width="20%" style="width:10%">{!ShpItem.Shipment_Product_SKU__c}</td>
+                                    <td style="width:10%;-ms-word-break: break-all;word-break: break-word; word-break: break-all;"><span style=" width: 140px; word-break:break-all; -webkit-hyphens: auto;hyphens: auto;">{!ShpItem.Box_Info__c}</span></td>
+                                    <td style="text-align:center;width:13%">{!ShpItem.Shipment_Product_Weight__c}</td>
+                                    <td style="text-align:center;width:10%">{!ShpItem.Cubed_Ft__c}</td>
+                                    <td colspan="5">{!ShpItem.Product_Name__c + ' - ' + ShpItem.Shipment_Product_Name__c}</td>
+                                    <!-- <td>{!ShpItem.Weight_Pounds__c/ShpItem.Quantity__c}</td>
+                                    <td>{!ShpItem.Weight_Pounds__c}</td>
+                                    <td>$ </td>
+                                    <!-- <td width="20%">{!QI.Discount__c}</td>
+                                    <td>$ 0.00 </td>-->
+                                </tr>
+                              </apex:repeat>
+
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th align="center"> Total qty. </th>
+                                <th></th>
+                                <th></th>
+                                <th width="10%">Total wt.</th>
+                                <th width="10%">Total Cubed Ft.</th>
+                            </tr>
+                            <tr>
+                                <td align="center">{!quantity} </td>
+                                <td></td>
+                                <td></td>
+                                <td width="10%" align="center">{!weight}</td>
+                                <td width="10%" align="center">{!shipment.Total_Cubed_Ft__c}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <!-- table for Carrier Information -->
+                
+                <!-- table for Carrier Information -->
+                <div class="table-responsive" style="width:100%">
+                    
+                    <table width="100%" class="table-bordered">
+                        
+                        <tbody>
+                            <!--   <tr>
+<td colspan="2"> Where the rate is asfadg adga dgadgadgadga dgagadad gadga dgad gad gagad gaga  </td>
+<td colspan="2">COD Amount:$ _________  <br/> 
+Fee Terms: <img src="/img/checkbox_unchecked.gif"/>Collect   <img src="/img/checkbox_unchecked.gif"/>Prepaid  Customer check acceptable<img src="/img/checkbox_unchecked.gif"/>
+</td>
+</tr>
+<tr >
+<td colspan="4">Note: Liability limitation for loss or damage in this shipment may be applicable. See ....   </td>
+</tr>-->
+                            <tr>
+                                <td colspan="2" style="vertical-align:middle;font-size:9px;">Customer has inspected all furniture and has determined it to be in 100% perfect condition. Any issues must be notated on the Bill of Lading. Coleman Furniture is not responsible for any damages or issues with furniture.</td>
+                                <td colspan="2" style="padding:10px"><b>Customer Signature</b> _____________________________ <br/> <br/>
+                                    <b>Delivery Date</b> _____________________________
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="30%" style="vertical-align:top;">
+                                    <div style="padding:5px">
+                                        <b style="padding:5px;font-size:12px">Shipper Signature Date </b>
+                                        <br/><br/>
+                                        <hr/>
+                                        <p style="font-size:9px;">This is to certify that the above named materials are properly classified, packaged, marked, and labeled, and are in proper condition for transportation according to the applicable regulations of the DOT.</p>
+                                    </div>
+                                </td>
+                                <td rowspan="2" width="15%" style="vertical-align:top;padding:5px;"><b style="font-size:12px">Trailer Loaded: </b><br/>
+                                    <img src="/img/checkbox_unchecked.gif"/>By Shipper <br/>
+                                    <img src="/img/checkbox_unchecked.gif"/>By driver
+                                </td>
+                                <td rowspan="2" width="25%" style="vertical-align:top;padding:5px;"><b style="font-size:12px">Freight Counted: </b><br/>
+                                    <img src="/img/checkbox_unchecked.gif"/>By Shipper <br/>
+                                    <img src="/img/checkbox_unchecked.gif"/>By driver/pallets said to contain<br/>
+                                    <img src="/img/checkbox_unchecked.gif"/>By driver/pieces
+                                </td>
+                                <td rowspan="2" style="vertical-align:middle;">
+                                    <div style="padding:20px">
+                                        <b style="font-size:12px">Carrier Signature</b><br/>
+                                        <br/>
+                                        <br/>
+                                        <hr/>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!--  <tr>
+<td width="30%">This is to certify that the above named materials are properly classified, packaged, marked, and labeled, and are in proper condition for transportation according to the applicable regulations of the DOT.</td>
+
+</tr> --> 
+                        </tbody>
+                    </table>
+                </div>
+                <!-- table for Carrier Information -->
+                
+            </div>
+            <!-- main-wrapper ends here -->          
+        </body>
+    </html>   
+</apex:page>

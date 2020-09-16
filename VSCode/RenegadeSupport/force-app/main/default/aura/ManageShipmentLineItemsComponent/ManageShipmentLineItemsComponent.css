@@ -1,0 +1,49 @@
+.THIS {
+  background: #ffffff;
+  border: 1px solid #dae1f4;
+  box-sizing: border-box;
+  border-radius: 4px;
+  overflow: auto;
+  flex: 1 0 auto;
+}
+
+/* .THIS td img {
+  height: auto !important;
+  width: auto !important;
+  min-width: 60px;
+  max-width: 85px;
+} */
+.THIS .slds-table td {
+  white-space: normal;
+}
+.THIS .slds-table th {
+  white-space: normal;
+  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  vertical-align: top;
+}
+.THIS .slds-modal__close {
+  display: none;
+}
+.THIS {
+  position: relative;
+}
+.THIS .sticky {
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+.THIS .slds-button-group {
+  padding: 0;
+}
+.THIS .slds-button-group .slds-button {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.THIS .buttons-wrap {
+    height: 49px;
+}
+.THIS .table-wrap {
+  overflow: auto;
+}

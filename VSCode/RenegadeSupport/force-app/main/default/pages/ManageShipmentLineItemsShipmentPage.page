@@ -1,0 +1,126 @@
+<apex:page standardController="Shipment__c">
+    <apex:includeLightning />
+    <div id="ManageShipmentLineItemsId"></div>
+    <script src="../../soap/ajax/43.0/connection.js" type="text/javascript"></script>
+    <script>
+        $Lightning.use("c:ManageShipmentLineItemsApp", function () {
+            $Lightning.createComponent("c:ManageShipmentLineItemsComponent",
+                {
+                    recordId: '{!$CurrentPage.parameters.id}',
+                    visualforceURL: window.location.origin,
+                    isClassic: true
+                },
+                "ManageShipmentLineItemsId",
+                function (component) { });
+        });
+
+        var lineIdList = [];
+        var shipmentIdList = [];
+        var salesOrderId = null;
+
+        var eventMethod = window.addEventListener
+            ? "addEventListener"
+            : "attachEvent";
+        var eventer = window[eventMethod];
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+        eventer(
+            messageEvent,
+            function (wrapper) {
+                if (!!wrapper.data.files && wrapper.data.files.length > 0) {
+                    lineIdList = wrapper.data.lineIdList;
+                    shipmentIdList = wrapper.data.shipmentIdList;
+                    salesOrderId = wrapper.data.salesOrderId;
+                    for (var i = 0; i < wrapper.data.files.length; i++) {
+                        uploadAttachment(wrapper.data.files[i], i == wrapper.data.files.length - 1);
+                    }
+                }
+            },
+            false
+        );
+
+        function uploadAttachment(file, isLast) {
+            var reader = new FileReader();
+            if (typeof file === "undefined") {
+                return;
+            }
+
+            reader.onload = function (event) {
+
+                var __sfdcSessionId = '{!$Api.Session_ID}';
+                sforce.connection.sessionId = '{!$Api.Session_ID}';
+                sforce.connection.serverUrl = '{!$Site.Prefix}/services/Soap/u/40.0';
+                var contentVersion = new sforce.SObject('ContentVersion');
+                contentVersion.Title = file.name;
+                contentVersion.PathOnClient = file.name;
+                contentVersion.FirstPublishLocationId = lineIdList[0];
+                contentVersion.Description = '';
+
+                var binary = "";
+                var bytes = new Uint8Array(event.target.result);
+                var length = bytes.byteLength;
+
+                for (var i = 0; i < length; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+
+                contentVersion.VersionData = (new sforce.Base64Binary(binary)).toString();
+
+                sforce.connection.create([contentVersion],
+                    {
+                        onSuccess: function (result, source) {
+                            if (result[0].getBoolean("success")) {
+                                console.log("new attachment created with id " + result[0].id);
+                                var documentId = sforce.connection.query("SELECT Id FROM ContentDocument WHERE LatestPublishedVersionId = '" + result[0].id + "'").records["Id"];
+                                var linkList = [];
+                                for (var i = 1; i < lineIdList.length; ++i) {
+                                    var contentDocumentLinkItem = new sforce.SObject('ContentDocumentLink');
+                                    contentDocumentLinkItem.ContentDocumentId = documentId;
+                                    contentDocumentLinkItem.LinkedEntityId = lineIdList[i];
+                                    contentDocumentLinkItem.ShareType = 'V';
+                                    linkList.push(contentDocumentLinkItem);
+                                }
+                                for (var i = 0; i < shipmentIdList.length; ++i) {
+                                    var contentDocumentLinkShip = new sforce.SObject('ContentDocumentLink');
+                                    contentDocumentLinkShip.ContentDocumentId = documentId;
+                                    contentDocumentLinkShip.LinkedEntityId = shipmentIdList[i];
+                                    contentDocumentLinkShip.ShareType = 'V';
+                                    linkList.push(contentDocumentLinkShip);
+                                }
+
+                                var contentDocumentLinkSO = new sforce.SObject('ContentDocumentLink');
+                                contentDocumentLinkSO.ContentDocumentId = documentId;
+                                contentDocumentLinkSO.LinkedEntityId = salesOrderId;
+                                contentDocumentLinkSO.ShareType = 'V';
+                                linkList.push(contentDocumentLinkSO);
+
+                                var result = sforce.connection.create(linkList);
+                            }
+                            else {
+                                console.log("failed to create attachment " + result[0]);
+                            }
+                            if (isLast) {
+                                window.postMessage(
+                                    {
+                                        status: "success"
+                                    },
+                                    window.location.origin
+                                );
+                            }
+                        },
+                        onFailure: function (error, source) {
+                            console.log("an error has occurred " + error);
+                            if (isLast) {
+                                window.postMessage(
+                                    {
+                                        status: "fail"
+                                    },
+                                    window.location.origin
+                                );
+                            }
+                        }
+                    });
+            }
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</apex:page>

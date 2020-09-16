@@ -1,0 +1,557 @@
+<apex:page standardController="Sales_Order__c" extensions="createInvoicepageController" sidebar="false" showHeader="false" id="pageId" docType="html-5.0">
+    <apex:form id="formId">
+        <apex:stylesheet value="{!URLFOR($Resource.renegade_stylesheet)}" />
+        <html>
+            <head>
+                <title>Generate Invoice</title>
+                <apex:outputPanel id="scriptPanel">
+                    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+                    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+                    
+                    <script type="text/javascript">
+                    
+                        $(document).ready(function(){
+                            var rowCount = $('.table-fixed tr').length;
+                            if(rowCount > 4){
+                                $( ".table-fixed>thead" ).css( "width", "97.7" + "%");
+                                $( ".table-fixed>tbody" ).css( "height", "243" + "px");
+                            }
+                            else{
+                                $( ".table-fixed>thead" ).css( "width", "99.3" + "%");
+                                $( ".table-fixed>tbody" ).css( "height", "auto");
+                            }
+                            limitCardNumber();
+                        });
+                        
+                        /***************** Page Redirection ******************/
+                        
+                        
+                        function goToHomePage() {
+                            window.location = '/home/home.jsp';
+                        }
+                        /***************** Page Redirection ******************/
+                        function limitCardNumber(){
+                            debugger;
+                            
+                            var field = document.getElementById('pageId:formId:cardnumber');
+                            if(!field){
+                                return;
+                            }
+                            var filtredValue = {!limitCardNumber} ? field.value.replace(/[\D]/g,'') : field.value;
+                            if(filtredValue.length > 4 && {!limitCardNumber}){
+                                filtredValue = filtredValue.substring(filtredValue.length-4) ;
+                            }
+                            field.value = filtredValue;
+                        }
+                        function checkAmountLimit(field, currentNumber, maxValue){
+                            if(!currentNumber){
+                                currentNumber=currentNumber.replace(",","");
+                            }
+                            if( !currentNumber || !+currentNumber || +currentNumber < 0 || +currentNumber > maxValue){
+                                document.getElementById(field).value = maxValue;
+                            }
+                        }
+                        
+                        function dissableOnClick (objSubmitBtn) {
+                            debugger;
+                            objSubmitBtn.disabled = true;
+                            if({!grandTotal} == '0.00') { 
+                                alert('Please Select atleast one line item quantity to generate Invoice');
+                                redirect();
+                            }
+                        }
+                        function enableOnClick (objSubmitBtn) {
+                            debugger;
+                            //objSubmitBtn.disabled = false;
+                        }
+                                
+                    </script>
+                </apex:outputPanel>
+                <style>
+                    body input[type=text]{height: 23px !important;
+                    border-radius: 3px !important;
+                    border: 1px solid #ccc !important;
+                    padding: 0px 5px 0px 10px !important;}  
+                    .colHeadr {
+                    text-align: center;
+                    }
+                    body .pbBody table.list tr.dataRow th, body .pbBody table.list tr.dataRow td
+                    {
+                    border-width: 0 0 1px 0;
+                    vertical-align: middle;
+                    text-align: center;
+                    }
+                    .sfdc_richtext img {
+                    border: 0;
+                    width: 70px !important;
+                    height: 45px !important;
+                    }
+                    .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+                    margin: 0;
+                    }
+                    .bPageBlock .detailList .dataCol {
+                    width: 0 !important;
+                    }
+                    .bPageBlock .detailList .labelCol {
+                    width: 0 !important;
+                    }
+                    .bPageBlock .labelCol {
+                    padding-right: 0px !important;
+                    padding-left: 0px !important;
+                    }
+                    .bPageBlock .dataCol {
+                    padding-right: 0px !important;
+                    padding-left: 5px;
+                    }
+                    .labelCol, body .print .topics-label {
+                    color: #4a4a56;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    }
+                    .individualPalette .Custom8Block .tertiaryPalette {
+                    background-color: #6f8992 !important;
+                    }  
+                    .message {
+                    border-radius: 4px;
+                    margin-bottom: 20px;
+                    }
+                    body .btn{
+                    background: #69c5ec !important;
+                    outline:0 !important;
+                    }
+                    
+                    @media only screen  and (min-width : 1824px) {
+                    .inner {
+                    width: 46.7%;
+                    float: left;
+                    }
+                    }
+                    @media only screen  and (min-width : 1224px) {
+                    .inner {
+                    width: 43.5% !important;
+                    float: left !important;
+                    }
+                    }
+                    
+                    @media only screen  and (max-width : 1220px) {
+                    .inner {
+                    width: 41% ;
+                    float: left;
+                    }
+                    }
+                    @media only screen and (min-device-width : 768px) and (max-device-width : 1024px){
+                    .inner {
+                    width: 93% !important;
+                    float: left !important;
+                    }
+                    }
+                    .invoice-table-fld-th{width: 10.6%;}
+                    .invoice-table-fld-first-th {
+                    width: 15%;
+                    }
+                    
+                    .lds-dual-ring {
+                    display: inline-block;
+                    width: 64px;
+                    height: 64px;
+                    }
+                    .lds-dual-ring:after {
+                    content: " ";
+                    display: block;
+                    width: 46px;
+                    height: 46px;
+                    margin: 1px;
+                    border-radius: 50%;
+                    border: 5px solid #fff;
+                    border-color: #fff transparent #fff transparent;
+                    animation: lds-dual-ring 1.2s linear infinite;
+                    }
+                    @keyframes lds-dual-ring {
+                    0% {
+                    transform: rotate(0deg);
+                    }
+                    100% {
+                    transform: rotate(360deg);
+                    }
+                    }
+
+                    .spinner-wrap {
+                    position:fixed;
+                    display:block;
+                    left:0;
+                    top:0;
+                    bottom:0;
+                    right:0;
+                    background-color: rgba(0,0,0,0.4);
+                    z-index: 10000;
+                    
+                    }
+                    .spinner-wrap div {
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%,-50%) scale(2);
+                    }
+                </style>
+            </head>
+            <!--h5 style="font-size:20px;margin-left:500px;">
+Sales Order: {!SO_Obj.name}
+</h5-->
+            <body>  
+                <apex:outputPanel id="bodyPanel">
+                <apex:actionStatus id="status" >
+                    <div class="spinner-wrap">
+                        <apex:facet name="start">
+                            <div class="spinner-wrap">
+                                    <div class="lds-dual-ring" ></div>
+                        
+                            </div>
+                        </apex:facet> 
+                    </div>
+                    
+                </apex:actionStatus>
+                <div id="main-wrapper">
+                    <!-- Header effect -->
+                    <div class="effect6">
+                        <div class="header_container">
+                            <apex:image value="{!$Resource.coleman_header_logo}" />
+                            <div style="float:right;width: 19%;padding: 20px 40px;">
+                                <apex:commandButton status="message" id="Cancel" value="Cancel" action="/{!Sales_Order__c.id}" styleClass="Header-btns" style="background: #F3F3F3 !important;font-size:11px;float:right"/>
+                                <apex:commandButton status="message" id="home" value="Home Page" styleClass="Header-btns" oncomplete="goToHomePage()" style="background: #F3F3F3 !important;font-size:11px;float:right;margin-right:10px;"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end of Header effect -->
+                    <div class="create-iv-content_container" style="margin-top: 103px;">
+                        <apex:pageMessages id="messages"></apex:pageMessages>
+                        <div class="invoice-details-div">
+                            <h3>New Invoice for Sales Order #{!SO_Obj.Magento_order_No__c}</h3>
+                        </div>
+                        <fieldset class="fieldset1 address-fld">
+                            <fieldset class="inner" style="margin-right: 27px;padding-bottom:44px;">
+                                <legend class="invoice-legend-add-label">Order Details:</legend>
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Order Date :</label>
+                                    <apex:outputText value="{0, date, MMMM d','  yyyy hh:mm:ss a}"
+                                                     label="Order Date" style="margin-left:5px">
+                                        <apex:param value="{!SO_Obj.Order_Date__c}" />
+                                    </apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Order Status : </label>
+                                    <apex:outputText value="{!SO_Obj.Order_Status__c}"
+                                                     style="margin-left:5px"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Order Type :</label>
+                                    <apex:outputText value="{!SO_Obj.Order_Type__c}"
+                                                     style="margin-left:5px"></apex:outputText>
+                                </div>
+                                <br />
+                            </fieldset>
+                            <fieldset class="inner">
+                                <legend class="invoice-legend-add-label">Customer Information:</legend>
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label"> Customer Name : </label>
+                                    <apex:outputText value="{!SO_Obj.Customer_Name__r.name}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label"> Email : </label>
+                                    <apex:outputText value="{!SO_Obj.Customer_Email__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label"> Telephone : </label>
+                                    <apex:outputText value="{!SO_Obj.Customer_Name__r.Phone}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label"> Mobile : </label>
+                                    <apex:outputText value="{!SO_Obj.Mobile__c}"></apex:outputText>
+                                </div>
+                                <br />
+                            </fieldset>
+                        </fieldset>
+                        <br />
+                        <br />
+                        
+                        <fieldset class="fieldset1 address-fld">
+                            <fieldset class="inner" style="margin-right: 27px;">
+                                <legend class="invoice-legend-add-label">Billing Address:</legend>
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Bill to : </label>
+                                    <apex:outputText value="{!SO_Obj.Bill_To__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Billing Street : </label>
+                                    <apex:outputText value="{!SO_Obj.Billing_Street__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Billing City : </label>
+                                    <apex:outputText value="{!SO_Obj.Billing_City__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Billing State/Province : </label>
+                                    <apex:outputText value="{!SO_Obj.Billing_State__c} "></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Billing Zip/Postal Code :
+                                    </label>
+                                    <apex:outputText value="{!SO_Obj.Billing_ZipCode__c}"
+                                                     label="BillingPostalCode" />
+                                </div>
+                                <br />
+                                
+                            </fieldset>
+                            <fieldset class="inner">
+                                <legend class="invoice-legend-add-label">Shipping Address:</legend>
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Ship to : </label>
+                                    <apex:outputText value="{!SO_Obj.Ship_to__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Shipping Street : </label>
+                                    <apex:outputText value="{!SO_Obj.Shipping_Street__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Shipping City : </label>
+                                    <apex:outputText value="{!SO_Obj.Shipping_City__c}"></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Shipping State/Province :
+                                    </label>
+                                    <apex:outputText value="{!SO_Obj.Shipping_State__c} "></apex:outputText>
+                                </div>
+                                <br />
+                                <div class="invoice-bill-add-rows">
+                                    <label class="inv-bill-add-label">Shipping Zip/Postal Code :
+                                    </label>
+                                    <apex:outputText value="{!SO_Obj.Shipping_ZipCode__c}"
+                                                     label="ShippingPostalCode" />
+                                </div>
+                                <br />
+                            </fieldset>
+                        </fieldset>
+                        <br />
+                        <br />
+                        
+                        <fieldset class="fieldset1 address-fld">
+                            <fieldset class="inner" style="margin-right: 27px;">
+                                <legend class="invoice-legend-add-label">Payment Information:</legend>
+                                <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                    <label class="inv-bill-add-label">Payment Type : </label>
+                                    <apex:outputField value="{!SO_Obj.Payment_Method__c}" style="{!styleVar}"></apex:outputField>
+                                </div>
+                                <br/>
+                                    <apex:actionFunction name="rerenderChangeToManualPaymentPanels" reRender="bodyPanel,scriptPanel"/>
+                                    
+                                    <apex:outputPanel id="ChangeToManualPaymentMainPanel">
+                                        <apex:outputPanel rendered="{!showChangeToManualPaymentPanel}">
+                                            <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                                <label class="inv-bill-add-label">Change to Manual Payment : </label>
+                                                    <apex:inputCheckbox value="{!isChangeToManualPayment}" style="{!styleVar}" disabled="{!hasPartialManualPayment}" onchange="rerenderChangeToManualPaymentPanels()"/>
+                                                    <!-- <apex:actionSupport event="onchange" /> -->
+                                            </div>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel id="changeManualPaymentPanel" rendered="{!isChangeToManualPayment}">
+                                            <!-- AND(, SO_Obj.Payment_Method__c != 'Manual Payment') -->
+                                            <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                                <label class="inv-bill-add-label"> Manual Payment Type: </label>
+                                                <apex:selectList value="{!chosenManualPaymentType}" size="1" style="{!styleVar}" onchange="rerenderChangeToManualPaymentPanels()">
+                                                    <apex:selectOptions value="{!pymentMethodRecordTypeList}"/>
+                                                    <!-- <apex:actionSupport event="onchange" /> -->
+                                                </apex:selectList>
+                                            </div>
+                                            <apex:outputPanel rendered="{!showCardType}">
+                                                <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                                    <label class="inv-bill-add-label">Card Type : </label>
+                                                    <apex:inputField value="{!paymentMethodForManualChanging.Card_Type__c}" style="{!styleVar}"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                            <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                                <label class="inv-bill-add-label">Card Number/Charge ID : </label>
+                                                <apex:inputField id="cardnumber" value="{!paymentMethodForManualChanging.Credit_Card_Number__c}" style="{!styleVar}" onkeyup="limitCardNumber()" onkeypress="limitCardNumber()" onblur="limitCardNumber()"/>
+                                                
+                                            </div>
+                                        </apex:outputPanel>
+                                </apex:outputPanel>
+                            </fieldset>
+                            <fieldset class="inner">
+                                <legend class="invoice-legend-add-label">Shipping Information:</legend>
+                                <div class="invoice-bill-add-rows" style="margin-bottom: 11px;">
+                                    
+                                    <b>Free Shipping - </b><apex:OutputText value="Total Shipping Charges: ${!SO_Obj.Shipping_Handle__c}" />
+                                    
+                                </div>
+                            </fieldset>
+                        </fieldset>
+                        <br />
+                        <br />
+
+                        
+                        <div class="table-panel">
+                            <div class="panel-heading">
+                                <h4>Items to Invoice</h4>
+                            </div>
+                            <table width="100%" class="inv-table table-fixed">
+                                <thead>
+                                    <tr>
+                                        <th class="invoice-table-fld-first-th" style="width: 15%;">Product</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Image</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Price</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Qty Ordered</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Sub Total</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Tax Amount</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Discount Amount</th>
+                                        <th class="invoice-table-fld-th" style="width: 10.6%;">Row Total</th>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <apex:repeat id="pbtId" value="{!soRelatedList}" var="item">
+                                        <tr>
+                                            <td class="invoice-table-fld-first-th" style="line-height: 1.8;width:15%"><b>{!item.SoItem.Product_Name__c}</b><br/>
+                                                <b>SKU : </b>{!item.SoItem.ProductSKU__c}
+                                            </td>
+                                            <td class="invoice-table-fld-th" style="width: 10.6%;"><img src="{!item.SoItem.ProductImageUrl__c}"
+                                                                                                        width="70px" height="45px" /></td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">
+                                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                                 style="text-align: center;width:10%">
+                                                    <apex:param value="{!item.SoItem.Price__c}" />
+                                                </apex:outputText>
+                                            </td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">{!item.SoItem.Quantity__c}</td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">${!item.subTotal}</td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">${!item.taxAmount}</td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">${!item.disAmount}</td>
+                                            <td class="invoice-table-fld-th" valign="center" style="width: 10.6%;">${!item.rowTotal}</td>
+                                        </tr>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="margin-top: 20px; width: 100%; float: left;">
+                            <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                                <h5>
+                                    SubTotal :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!subTot}" />
+                                    </apex:outputText>
+                                </h5>
+                            </div>
+                            <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                                <h5>
+                                    Shipping &#38; Handling :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!SO_Obj.Shipping_Handle__c}" />
+                                    </apex:outputText>
+                                </h5>
+                            </div>
+                            <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                                <h5>
+                                    <apex:outputText value="Discount ({!SO_Obj.Promotion__r.Name}) :"  rendered="{!!if(SO_Obj.Promotion__r.Name == Null,true,false)}"/>
+                                    <apex:outputText value="Discount :" rendered="{!if(SO_Obj.Promotion__r.Name == Null,true,false)}"/>
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <!--apex:param value="{!disAmount}" /-->
+                                        <apex:param value="{!SO_Obj.Discount_AmountTotal__c}" />
+                                    </apex:outputText>
+                                </h5>
+                            </div>
+                            <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                                <h5>
+                                    Tax Amount :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!SO_Obj.TaxAmount__c}" />
+                                    </apex:outputText>
+                                </h5>
+                            </div>
+                            <apex:outputPanel id="manualInvoiceAmount" rendered="{!OR(showManualInvoiceAmount, isChangeToManualPayment)}">
+                                <div style="margin-bottom: 10px; text-align: right;font-size: 15px;">
+                                    <h5>
+                                        Manual Invoice Amount : 
+                                        <apex:inputText id="invoiceAmountField" value="{!paymentMethodForManualChanging.Amount__c}" style="{!styleVar} width:80px;"
+                                                onchange="checkAmountLimit('{!$Component.invoiceAmountField}', this.value, {!SO_Obj.Total_Due__c} ); updateInvoiceAmount()"/>
+                                        <apex:actionFunction name="updateInvoiceAmount" action="{!updateInvoiceAmount}" reRender="false"/>
+                                    </h5>
+                                </div>
+                            </apex:outputPanel>
+                            <hr />
+                            <!-- <div style="margin-bottom: 20px; text-align: right; font-size: 21px;">
+                                <h3>
+                                    Grand Total :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!grandTotal}" />
+                                    </apex:outputText>
+                                </h3>
+                            </div> -->
+                            <div style="margin-bottom: 20px; text-align: right; font-size: 21px;">
+                                <h3>
+                                    <!-- Order -->Grand Total : 
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!SO_Obj.Grand_Total__c}" />
+                                    </apex:outputText>
+                                </h3>
+                            </div>
+                            <div style="margin-bottom: 20px; text-align: right; font-size: 21px;">
+                                <h3>
+                                    Order Total Paid :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!SO_Obj.Total_Paid__c}" />
+                                    </apex:outputText>
+                                </h3>
+                            </div>
+                            <div style="margin-bottom: 20px; text-align: right; font-size: 21px;">
+                                <h3>
+                                    Order Total Due :
+                                    <apex:outputText value="{0, number, $#,###,###,###,##0.00}"
+                                                     style="text-align: center;width:10%">
+                                        <apex:param value="{!SO_Obj.Total_Due__c}" />
+                                    </apex:outputText>
+                                </h3>
+                            </div>
+                            <div
+                                 style="margin-bottom: 20px; text-align: right; font-size: 12px;">
+                                <p>
+                                    <apex:inputCheckbox value="{!isChecked}" />
+                                    Notify Customer by Email
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="create-invoice-btns">
+                            
+                            <apex:commandButton value="Submit Invoice" action="{!submitInvoice}" styleClass="manstep3-savebtn"
+                                                onClick="dissableOnClick(this);"
+                                                rendered="{!Not(isBlank(soRelatedList))}" oncomplete="enableOnClick(this)" rerender="messages" status="status"/>
+                            <apex:actionFunction name="redirect" onComplete="location.reload(true);"/>    
+                            <apex:commandButton value="Cancel" action="/{!Sales_Order__c.id}" immediate="true"
+                                                styleClass="manstep3-cancelbtn" style="width: 149px;margin-right:20px;"/>
+                            
+                        </div>
+                        <!-- test table -->
+                    </div>
+                </div>
+                </apex:outputPanel>
+            </body>    
+        </html>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,28 @@
+/* .THIS {
+} */
+
+.THIS .file {
+    display: none;
+}
+
+.THIS lightning-calendar >.slds-datepicker {
+      display: block !important;
+  position: absolute !important;
+  top: unset !important;
+  left: unset !important;
+  transform: translate(-16px, -50%) !important;
+  z-index: 10 !important;
+}
+
+.THIS .file-label {
+  margin: 0 auto;
+  display: block;
+  width: 100px;
+}
+.THIS .error-notes {
+  border-color: red !important;
+}
+.THIS .error-panel{
+  color: red;
+  word-wrap: break-word;
+}

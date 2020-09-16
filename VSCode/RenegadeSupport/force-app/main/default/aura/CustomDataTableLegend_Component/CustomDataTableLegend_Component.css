@@ -1,0 +1,41 @@
+.THIS .legend-img {
+    width: 20px;
+    display: block;
+    margin: 0 auto;
+}
+.THIS .overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 10000;
+    display: block;
+}
+.THIS .overlay ~ * {
+    z-index: 10001;
+}
+.THIS .legend {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 10px;
+    z-index: 10;
+    background: #fff;
+    border: 1px solid #333;
+    border-radius: 3px;
+    box-shadow: 0 0 3px #333;
+}
+.THIS .legend table {
+    border: 1px solid #000;
+}
+.THIS .legend th,
+.THIS .legend td{
+  padding: 8px;
+  border: 1px solid #000;
+}
+.THIS .legend th {
+  	padding: 5px 8px;
+    border-width: 1.5px;
+}

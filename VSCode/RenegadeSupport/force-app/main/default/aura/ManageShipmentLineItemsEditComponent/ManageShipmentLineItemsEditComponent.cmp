@@ -1,0 +1,404 @@
+<aura:component controller="ManageShipmentLineItemsController">
+  <!--
+    Shipment_Item_Status__c
+    Consignment_Center__c
+    Damage_Action__c
+    Location_Of_Furniture__c
+    Tech_Scheduled_By__c
+    No_Fit_Status__c
+    Sent_Tech_Report__c
+
+    Scheduled_Delivery_Date__c
+    Drop_Off_Date_Actual__c
+    Delivery_Date_Actual__c
+    Repair_Amount__c
+    Repair_Date_Expected__c
+    Replacement_Drop_off_Date_Actual__c
+    Replacement_Drop_off_Date_Expected__c
+    Repair_Date_Actual__c
+    Status_Of_Tech_Needed__c
+    Parts_Information__c
+    Parts_Arrival_Expected__c
+    Parts_Arrival_Date_Actual__c
+    Parts_Are_Shipping__c
+    Tech_Needed_Create_Date__c
+    Tech_Request_Submitted_Date__c
+    Tech_Appointment_Confirmed__c
+    Furniture_Condition__c
+
+    input file
+    -->
+  <!--GLOBAL ATTRIBUTES-->
+  <aura:attribute name="shipmentIdList" type="List" />
+  <aura:attribute name="shipmentLineIdList" type="List" />
+  <aura:attribute name="shipmentLine" type="Object" />
+  <aura:attribute name="pageType" type="String" />
+  <aura:attribute name="isClassic" type="Boolean" default="true" />
+  <aura:attribute name="salesOrderId" type="String" />
+  <aura:attribute name="fieldDisplayingSetting" type="Map" />
+
+  <!--PRIVATE ATTRIBUTES-->
+  <aura:attribute name="objectToEdit" type="Object" />
+  <aura:attribute name="shipmentItemStatusPicklist" type="List" />
+  <aura:attribute name="statusOfTechNeededPicklist" type="List" />
+  <aura:attribute name="furnitureConditionPicklist" type="List" />
+  <aura:attribute name="files" type="Object[]" />
+
+  <aura:attribute name="isShowDropOffDateActual" type="Boolean" />
+  <aura:attribute name="isShowRepairAmount" type="Boolean" />
+  <aura:attribute name="isShowRepairDateExpected" type="Boolean" />
+  <aura:attribute name="isShowReplacementDropOffDates" type="Boolean" />
+  <aura:attribute name="isShowRepairDateActual" type="Boolean" />
+  <aura:attribute name="isShowStatusOfTechNeeded" type="Boolean" />
+  <aura:attribute name="isShowPartsInformation" type="Boolean" />
+  <aura:attribute name="isShowPArtArrivalDates" type="Boolean" />
+  <aura:attribute name="isShowPartsAreShipping" type="Boolean" />
+  <aura:attribute name="isShowTechNeededCreateDate" type="Boolean" />
+  <aura:attribute name="isShowTechRequestSubmittedDate" type="Boolean" />
+  <aura:attribute name="isShowTechAppointmentConfirmed" type="Boolean" />
+  <aura:attribute name="isShowFiles" type="Boolean" />
+  <aura:attribute name="isShowFurnitureCondition" type="Boolean" />
+  <aura:attribute name="isShowConsignmentCenter" type="Boolean" />
+  <aura:attribute name="isShowErrorConsignmentCenter" type="Boolean" default="false" />
+  <aura:attribute name="errorMessageConsigmentCenter" type="String" />
+  <aura:attribute name="damageActionsMap" type="Map" />
+  <aura:attribute name="damageActionPicklist" type="List" />
+
+  <aura:attribute name="locationOfFurnitureMap" type="Map" />
+  <aura:attribute name="locationOfFurniturePicklist" type="List" />
+
+  <aura:attribute name="techScheduledByMap" type="Map" />
+  <aura:attribute name="techScheduledByPicklist" type="List" />
+
+  <aura:attribute name="noFitStatusMap" type="Map" />
+  <aura:attribute name="noFitStatusPicklist" type="List" />
+
+  <aura:attribute name="sentTechReportMap" type="Map" />
+  <aura:attribute name="sentTechReportPicklist" type="List" />
+
+  <aura:attribute name="visualforceURL" type="String" />
+
+  <aura:attribute name="showError" type="Boolean" default="false" />
+  <aura:attribute name="errorMessage" type="String" />
+
+
+  <!--HANDLERS AND EVENTS-->
+  <aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+  <aura:registerEvent name="closeEvent" type="c:ManageShipmentLineItemsCloseEvent" />
+
+  <aura:html tag="style">
+    .slds-modal .slds-modal__close { display: none; }
+  </aura:html>
+  <!-- LIBRARY-->
+  <lightning:notificationsLibrary aura:id="notifLib" />
+  <lightning:overlayLibrary aura:id="overlayLib" />
+
+  <lightning:spinner variant="brand" size="large" aura:id="mainSpinner" class="spinnerBackground" />
+
+  <div class="slds-grid slds-wrap slds-size_1-of-1 slds-large-size_3-of-12">
+    <div style="height: 100%;">
+      <section class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container" style="max-width: 20rem;">
+          <div class="slds-modal__content slds-p-around_medium">
+            <lightning:card title="Dependent Picklist Demo">
+              <!-- Controller Field  Shipment_Item_Status__c-->
+              <lightning:layoutItem size="12" padding="around-small">
+                <lightning:select name="Shipment_Item_Status__c" aura:id="Shipment_Item_Status__c"
+                  value="{!v.objectToEdit.Shipment_Item_Status__c}" label="Shipment Item Status"
+                  onchange="{!c.onItemStatusChange}">
+                  <aura:iteration items="{!v.shipmentItemStatusPicklist}" var="option">
+                    <option value="{!option.value}">{!option.label}</option>
+                  </aura:iteration>
+                </lightning:select>
+              </lightning:layoutItem>
+              <!-- Consignment_Center__c -->
+              <aura:if isTrue="{!v.isShowConsignmentCenter}">
+
+                <c:CustomLookupComponent aura:id="Consignment_Center__c"
+                  defaultId="{!v.objectToEdit.Consignment_Center__c}" chosenId="{!v.objectToEdit.Consignment_Center__c}"
+                  filterFieldName="Name" sObjectName="Account" lookupLabel="Consignment Center"
+                  showError="{!v.isShowErrorConsignmentCenter}" errorMessage="{!v.errorMessageConsigmentCenter}" />
+                <!-- <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input
+                    name="Consignment_Center__c"
+                    label="Consignment Center"
+                    value="{!v.objectToEdit.Consignment_Center__c}"
+                  />
+                </lightning:layoutItem> -->
+
+              </aura:if>
+
+              <!-- Damage_Action__c-->
+              <aura:if isTrue="{! and(!!v.damageActionPicklist, v.damageActionPicklist.length > 0)}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="Damage_Action__c" aura:id="Damage_Action__c"
+                    value="{!v.objectToEdit.Damage_Action__c}" label="Damage Action" onchange="{!c.onDamageChange}">
+                    <aura:iteration items="{!v.damageActionPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Location_Of_Furniture__c-->
+              <!-- <aura:if
+                isTrue="{! and(!!v.locationOfFurniturePicklist, v.locationOfFurniturePicklist.length > 0)}"
+              >
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select
+                    name="Location_Of_Furniture__c"
+                    aura:id="Location_Of_Furniture__c"
+                    value="{!v.objectToEdit.Location_Of_Furniture__c}"
+                    label="Location Of Furniture"
+                  >
+                    <aura:iteration
+                      items="{!v.locationOfFurniturePicklist}"
+                      var="option"
+                    >
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if> -->
+
+              <!-- Tech_Scheduled_By__c-->
+              <aura:if isTrue="{! and(!!v.techScheduledByPicklist, v.techScheduledByPicklist.length > 0)}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="Tech_Scheduled_By__c" aura:id="Tech_Scheduled_By__c"
+                    value="{!v.objectToEdit.Tech_Scheduled_By__c}" label="Tech Scheduled By">
+                    <aura:iteration items="{!v.techScheduledByPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- No_Fit_Status__c-->
+              <aura:if isTrue="{! and(!!v.noFitStatusPicklist, v.noFitStatusPicklist.length > 0)}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="No_Fit_Status__c" aura:id="No_Fit_Status__c"
+                    value="{!v.objectToEdit.No_Fit_Status__c}" label="No Fit Status">
+                    <aura:iteration items="{!v.noFitStatusPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Sent_Tech_Report__c-->
+              <aura:if isTrue="{! and(!!v.sentTechReportPicklist, v.sentTechReportPicklist.length > 0)}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="Sent_Tech_Report__c" aura:id="Sent_Tech_Report__c"
+                    value="{!v.objectToEdit.Sent_Tech_Report__c}" label="Sent Tech Report">
+                    <aura:iteration items="{!v.sentTechReportPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Scheduled_Delivery_Date__c-->
+              <aura:if isTrue="{! v.objectToEdit.Shipment_Item_Status__c == 'Scheduled Delivery'}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Scheduled_Delivery_Date__c" label="Scheduled Delivery Date"
+                    value="{!v.objectToEdit.Scheduled_Delivery_Date__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Delivery_Date_Actual__c-->
+              <aura:if isTrue="{! v.objectToEdit.Shipment_Item_Status__c == 'Delivered No Issues'}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Delivery_Date_Actual__c" label="Delivery Date"
+                    value="{!v.objectToEdit.Delivery_Date_Actual__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Drop_Off_Date_Actual__c-->
+              <aura:if isTrue="{! v.isShowDropOffDateActual == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Drop_Off_Date_Actual__c" label="Drop-Off Date(Actual)"
+                    value="{!v.objectToEdit.Drop_Off_Date_Actual__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Repair_Amount__c-->
+              <aura:if isTrue="{! v.isShowRepairAmount == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="number" formatter="currency" name="Repair_Amount__c" label="Repair Amount"
+                    value="{!v.objectToEdit.Repair_Amount__c}" min="0" max="1000000" onchange="{!c.changeNumber}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Repair_Date_Expected__c-->
+              <aura:if isTrue="{! v.isShowRepairDateExpected == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Repair_Date_Expected__c" label="Repair Date (Expected)"
+                    value="{!v.objectToEdit.Repair_Date_Expected__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Replacement_Drop_off_Date_Actual__c-->
+              <aura:if isTrue="{! v.isShowReplacementDropOffDates == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Replacement_Drop_off_Date_Actual__c"
+                    label="Replacement Drop-Off Date (Actual)"
+                    value="{!v.objectToEdit.Replacement_Drop_off_Date_Actual__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Replacement_Drop_off_Date_Expected__c-->
+              <aura:if isTrue="{! v.isShowReplacementDropOffDates == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Replacement_Drop_off_Date_Expected__c"
+                    label="Replacement Drop-Off Date (Expected)"
+                    value="{!v.objectToEdit.Replacement_Drop_off_Date_Expected__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Repair_Date_Actual__c-->
+              <aura:if isTrue="{! v.isShowRepairDateActual == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Repair_Date_Actual__c" label="Repair Date(Actual)"
+                    value="{!v.objectToEdit.Repair_Date_Actual__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Status_Of_Tech_Needed__c-->
+              <aura:if
+                isTrue="{! and(v.isShowStatusOfTechNeeded == true, and(!!v.statusOfTechNeededPicklist, v.statusOfTechNeededPicklist.length > 0))}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="Status_Of_Tech_Needed__c" aura:id="Status_Of_Tech_Needed__c"
+                    value="{!v.objectToEdit.Status_Of_Tech_Needed__c}" label="Status Of Tech Needed">
+                    <aura:iteration items="{!v.statusOfTechNeededPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Parts_Information__c-->
+              <aura:if isTrue="{! v.isShowPartsInformation == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input name="Parts_Information__c" label="Parts Information"
+                    value="{!v.objectToEdit.Parts_Information__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Parts_Arrival_Expected__c-->
+              <aura:if isTrue="{! v.isShowPArtArrivalDates == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Parts_Arrival_Expected__c" label="Parts Arrival Date (Expected)"
+                    value="{!v.objectToEdit.Parts_Arrival_Expected__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Parts_Arrival_Date_Actual__c-->
+              <aura:if isTrue="{! v.isShowPArtArrivalDates == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Parts_Arrival_Date_Actual__c" label="Parts Arrival Date (Actual)"
+                    value="{!v.objectToEdit.Parts_Arrival_Date_Actual__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Parts_Are_Shipping__c-->
+              <aura:if isTrue="{! v.isShowPartsAreShipping == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Parts_Are_Shipping__c" label="Parts Are Shipping"
+                    value="{!v.objectToEdit.Parts_Are_Shipping__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Tech_Needed_Create_Date__c-->
+              <aura:if isTrue="{! v.isShowTechNeededCreateDate == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Tech_Needed_Create_Date__c" label="Tech Needed Create Date"
+                    value="{!v.objectToEdit.Tech_Needed_Create_Date__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Tech_Request_Submitted_Date__c-->
+              <aura:if isTrue="{! v.isShowTechRequestSubmittedDate == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Tech_Request_Submitted_Date__c" label="Tech Request Submitted Date"
+                    value="{!v.objectToEdit.Tech_Request_Submitted_Date__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Tech_Appointment_Confirmed__c-->
+              <aura:if isTrue="{! v.isShowTechAppointmentConfirmed == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:input type="date" name="Tech_Appointment_Confirmed__c" label="Tech Appointment Confirmed"
+                    value="{!v.objectToEdit.Tech_Appointment_Confirmed__c}" />
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- Furniture_Condition__c
+					{! and(v.objectToEdit.Shipment_Item_Status__c == 'Hold As Stock',and(!!v.furnitureConditionPicklist, v.furnitureConditionPicklist.length > 0))}
+				-->
+
+              <aura:if isTrue="{! v.isShowFurnitureCondition == true}">
+                <lightning:layoutItem size="12" padding="around-small">
+                  <lightning:select name="Furniture_Condition__c" aura:id="Furniture_Condition__c"
+                    value="{!v.objectToEdit.Furniture_Condition__c}" label="Furniture Condition">
+                    <aura:iteration items="{!v.furnitureConditionPicklist}" var="option">
+                      <option value="{!option.value}">{!option.label}</option>
+                    </aura:iteration>
+                  </lightning:select>
+                </lightning:layoutItem>
+              </aura:if>
+
+              <!-- FILES-->
+              <aura:if isTrue="{! v.isShowFiles == true}">
+                <aura:if isTrue="{! v.isClassic == false}">
+                  <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:fileUpload name="fileUploader" label="Files" multiple="true" recordId="{!v.salesOrderId}"
+                      onuploadfinished="{! c.handleUploadFinished }" />
+                  </lightning:layoutItem>
+                  <aura:iteration items="{!v.files}" var="file_i">
+                    <div>
+                      <a onclick="{!c.showFile}" name="{!file_i.documentId}">{!file_i.name} </a>--
+                      <lightning:buttonIcon name="{!file_i.documentId}" iconName="utility:close" variant="bare"
+                        onclick="{! c.onDeleteFile }" alternativeText="Delete File" />
+                    </div>
+                  </aura:iteration>
+                  <aura:set attribute="else">
+                    <label for="file" class="file-label slds-button slds-button--neutral">Pick File</label>
+                    <input type="file" class="file" id="file" aura:id="file" multiple="true" onchange="{!c.sendFiles}"
+                      onclick="{!c.clearFiles}" />
+
+                    <div>
+                      <table>
+                        <aura:iteration items="{!v.files[0]}" var="file_i">
+                          <tr>
+                            <td>{!file_i.name}</td>
+                            <td>
+                              <lightning:buttonIcon name="{!file_i.name}" iconName="utility:close" variant="bare"
+                                onclick="{! c.onDeleteFile }" alternativeText="Delete File" />
+                            </td>
+                          </tr>
+                        </aura:iteration>
+                      </table>
+                    </div>
+                  </aura:set>
+                </aura:if>
+              </aura:if>
+              <!--{!v.salesOrderId}-->
+              <div class="error-panel">
+                <aura:if isTrue="{!v.showError}">
+                  {!v.errorMessage}
+                </aura:if>
+              </div>
+            </lightning:card>
+            <lightning:buttonGroup class="slds-chat-bookend">
+              <lightning:button label="Update" onclick="{!c.update}"
+                disabled="{! and(v.objectToEdit.Shipment_Item_Status__c == 'At Consignment', v.objectToEdit.Consignment_Center__c == null )}" />
+              <lightning:button label="Cancel" onclick="{!c.cancel}" />
+            </lightning:buttonGroup>
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+  </div>
+</aura:component>

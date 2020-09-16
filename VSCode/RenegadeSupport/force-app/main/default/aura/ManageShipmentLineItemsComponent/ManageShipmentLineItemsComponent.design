@@ -1,0 +1,4 @@
+<design:component>
+    <design:attribute name="height" label="Component height" />
+
+</design:component>

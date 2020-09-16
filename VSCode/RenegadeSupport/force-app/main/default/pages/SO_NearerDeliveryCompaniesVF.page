@@ -1,0 +1,603 @@
+<!-- It display the google map on Sales Order using Customer Shipping Address and nearer Delivery Companies And call NearByDeliveryCompaniesController
+to retrieve all  Delivery Companies near to the Customer Location--> 
+
+<apex:page sidebar="false" showheader="false" standardController="Sales_Order__c" extensions="SO_NearerDeliveryCompaniesController" recordSetVar="accts"  >
+    
+    <!-- Include in Google's Maps API via JavaScript static resource --> 
+    <!--<apex:includeScript value="{!$Resource.googleMapsAPI}" />   --> 
+    
+    <!-- Set this API key to fix JavaScript errors in production -->
+    <script src="/soap/ajax/28.0/connection.js" type="text/javascript"></script>
+    <script src="/soap/ajax/28.0/apex.js" type="text/javascript"></script> 
+    <!--script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCROH4OR9fzDhmprWPL1wGWfPT4uGUeMWg&sensor=false"></script--> 
+    <!--<script type="text/javascript" src="{!MY_KEY}"></script>  --> 
+    
+    <!-- Setup the map to take up the whole window --> 
+        <script type="text/javascript" src="https://maps.google.com/maps/api/js?key=AIzaSyDKbDTprU_oGUvvtRNIl5VS18_LDIeQHA0"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script> 
+    <style> 
+        html, body { height: 100%; }
+        .page-map, .ui-content, #map-canvas { width: 100%; height:100%; padding: 0; }
+        #map-canvas { height: min-height: 100%; }
+        .callout_btn_div{    width: 100%;float: left;height: 45px;text-align: center;}
+        .myButton a:hover{text-decoration:none;}
+        .myButton {
+        -moz-box-shadow: 0px 10px 14px -7px #3e7327;
+        -webkit-box-shadow: 0px 10px 14px -7px #3e7327;
+        box-shadow: 0px 10px 14px -7px #3e7327;
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #77b55a), color-stop(1, #72b352));
+        background:-moz-linear-gradient(top, #77b55a 5%, #72b352 100%);
+        background:-webkit-linear-gradient(top, #77b55a 5%, #72b352 100%);
+        background:-o-linear-gradient(top, #77b55a 5%, #72b352 100%);
+        background:-ms-linear-gradient(top, #77b55a 5%, #72b352 100%);
+        background:linear-gradient(to bottom, #77b55a 5%, #72b352 100%);
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#77b55a', endColorstr='#72b352',GradientType=0);
+        background-color:#77b55a;
+        -moz-border-radius:4px;
+        -webkit-border-radius:4px;
+        border-radius:4px;
+        border:1px solid #4b8f29;
+        display:inline-block;
+        cursor:pointer;
+        color:#ffffff;
+        font-family:Arial;
+        font-size:13px;
+        font-weight:bold;
+        padding:6px 12px;
+        text-decoration:none;
+        text-shadow:0px 1px 0px #5b8a3c;
+        }
+        .myButton:hover {
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #72b352), color-stop(1, #77b55a));
+        background:-moz-linear-gradient(top, #72b352 5%, #77b55a 100%);
+        background:-webkit-linear-gradient(top, #72b352 5%, #77b55a 100%);
+        background:-o-linear-gradient(top, #72b352 5%, #77b55a 100%);
+        background:-ms-linear-gradient(top, #72b352 5%, #77b55a 100%);
+        background:linear-gradient(to bottom, #72b352 5%, #77b55a 100%);
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#72b352', endColorstr='#77b55a',GradientType=0);
+        background-color:#72b352;
+        text-decoration:none;
+        }
+        .myButton:active {
+        position:relative;
+        top:1px;
+        }
+        .info_heading{width:100%;float:left;margin-bottom:5px;}
+    </style>
+    
+    <script>
+    function initialize() {
+        var deliveryId;
+        var deliverycomanyname;
+        var lat, lon,lat1,lon1;  
+        var soID = "{!$CurrentPage.parameters.id}"; 
+        var soql; 
+        // If we can, get the position of the user via device geolocation 
+        if (navigator.geolocation) 
+        {  
+            navigator.geolocation.getCurrentPosition(function(position)  {
+                try
+                {
+                    sforce.connection.sessionId = "{!$Api.Session_ID}"; //Used for Session out
+                    soql = "SELECT Id,Name, Delivery_Company__c,Shipping_City__c,Location__Latitude__s,Shipping_State__c,Shipping_Street__c,Shipping_ZipCode__c,Location__Longitude__s FROM Sales_Order__c WHERE id ='"+ soID+"'";
+                    result = sforce.connection.query(soql);
+                    records = result.getArray("records");
+                    lat = records[0].Location__Latitude__s; 
+                    lon = records[0].Location__Longitude__s;
+                    
+                    if(records[0].Delivery_Company__c != null)
+                    {
+                        deliveryId = records[0].Delivery_Company__c;
+                    }
+                    else
+                    {
+                        deliveryId = '';
+                    }
+                    if(deliveryId != '')
+                    {
+                        var recordType = 'Delivery Company';
+                        //alert('recordType: '+recordType);
+                        sforce.connection.sessionId = "{!$Api.Session_ID}"; //Used for Session out
+                        soql1 = "SELECT Id,Name,Location__Latitude__s,Location__Longitude__s,ShippingStreet,Phone,ShippingCity,ShippingPostalCode FROM Account WHERe id ='"+deliveryId+"' AND recordType.Name='"+recordType+"'";
+                        result1 = sforce.connection.query(soql1);
+                        records1 = result1.getArray("records");
+                        deliverycomanyname=records1[0].Name;
+                        lat1 = records1[0].Location__Latitude__s; 
+                        lon1 = records1[0].Location__Longitude__s; 
+                    }
+                }
+                catch(Error)
+                {
+                    //alert('Error: '+Error);
+                    console.log('Error: '+Error);
+                }
+                
+                // Use Visualforce JavaScript Remoting to query for nearby accts      
+                Visualforce.remoting.Manager.invokeAction('{!$RemoteAction.SO_NearerDeliveryCompaniesController.getNearby}', lat, lon,soID,deliveryId,lat1,lon1,deliverycomanyname,function(result, event)
+                                                          {
+                                                              //alert(result);
+                                                              console.log(result);
+                                                              if(deliveryId != '')
+                                                              {
+                                                                  createMap(lat,lon,result,lat1,lon1,records,records1);
+                                                              }
+                                                              else {
+                                                                  createMap1(lat,lon,result,records);
+                                                              }
+                                                              /*if (event.status) 
+                                                              { 
+                                                                  console.log(result);
+                                                                  createMap(lat, lon, result,lat1,lon1);  
+                                                                  
+                                                              }  
+                                                              else if (event.type == 'exception') 
+                                                              { 
+                                                                  //exception case code 
+                                                                  document.getElementById('map-canvas').innerHTML="Oops!  shipping address could not be found, please make sure the address is correct.";
+                                                                  //  alert('shipping address could not be found, please make sure the address is correct');
+                                                              } else 
+                                                              {  
+                                                                  
+                                                              }*/
+                                                          }, 
+                                                          {escape: true}
+                                                         );
+            });
+        } 
+        else 
+        { 
+            console.log('Geolocation is not supported for this Browser/OS version yet.');
+        } 
+    } 
+    
+    function createMap(lat, lon, accts,lat1,lon1,records,records1)
+    { 
+        // Get the map div, and center the map at the proper geolocation
+        var currentPosition = new google.maps.LatLng(lat,lon);
+        var mapDiv = document.getElementById('map-canvas');
+        var map = new google.maps.Map(mapDiv, 
+                                      {
+            center: currentPosition, 
+            zoom: 13,
+            scrollwheel: false,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+        // Set a marker for the current location
+        var positionMarker = new google.maps.Marker({
+            map: map,
+            position: currentPosition,
+            icon: 'http://maps.google.com/mapfiles/ms/micons/green.png'
+        });
+        var mapBoundary = new google.maps.LatLngBounds();
+        mapBoundary.extend(currentPosition);
+        
+        var soIdNavUrl;
+            // Determine if we are in Salesforce1 and set navigation link appropriately
+            try
+            {
+                if(sforce.one)
+                {
+                    soIdNavUrl = 'javascript:sforce.one.navigateToSObject(\'' + records[0].id + '\')';
+                }
+            } 
+            catch(err) 
+            { 
+                console.log(err);
+                soIdNavUrl = '\\' + records[0].Id;
+            } 
+        
+        var soIdDetails = 
+            <!-- '<a href="' + soIdNavUrl + '">' + -->
+            "<h4 class='info_heading'>Customer Address</h4>"+'<br/>';
+            
+            if(records[0].Shipping_Street__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_Street__c + '<br/>';
+            }
+            if(records[0].Shipping_City__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_City__c + '<br/>';
+            }
+            if(records[0].Shipping_State__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_State__c + '<br/>';
+            }
+            if(records[0].Shipping_ZipCode__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_ZipCode__c + '<br/>';
+            }
+            soIdDetails=soIdDetails+  '<br/>';  
+        
+        
+        /*var soIdDetails = 
+                <!-- '<a href="' + soIdNavUrl + '">' + -->
+             "<h4 class='info_heading'>Customer Address</h4>"+'<br/>' + 
+            // records[0].Name + '</a><br/>' + 
+            records[0].Shipping_Street__c + '<br/>' +     
+            records[0].Shipping_City__c + '<br/>' +
+            records[0].Shipping_State__c + '<br/>'+ 
+            records[0].Shipping_ZipCode__c + '<br/>';
+              */  
+            //   "<div id='divID' class='callout_btn_div'><a id='testid' onclick='(function () {alert(\"infoWindow2\"+this.soIdNavUrl);})();' class='myButton'>Select!</a></div>" + '<br/>' + '<br/>';
+            
+                // Create the callout that will pop up on the marker     
+                var infowindow2 = new google.maps.InfoWindow({ 
+                    content: soIdDetails
+                    //content: html
+                });
+            
+           
+        
+        // Add the action to open up the panel when it's marker is clicked      
+            google.maps.event.addListener(positionMarker, 'click', function(){
+                infowindow2.open(map, positionMarker);
+            }); 
+        
+        // Get the map div, and center the map at the proper geolocation for delivery company
+        var deliveryPosition = new google.maps.LatLng(lat1,lon1);
+        
+        // Set a marker for the current location
+        var positionMarker1 = new google.maps.Marker({
+            map: map,
+            position: new google.maps.LatLng(lat1,lon1),
+            icon: 'http://maps.google.com/mapfiles/ms/micons/blue.png'
+        });
+        
+        // Keep track of the map boundary that holds all markers
+        //mapBoundary.extend(deliveryPosition);
+        mapBoundary.extend(positionMarker1.getPosition());
+        
+        
+        var devliIdNavUrl;
+            // Determine if we are in Salesforce1 and set navigation link appropriately
+            try
+            {
+                if(sforce.one)
+                {
+                    devliIdNavUrl = 'javascript:sforce.one.navigateToSObject(\'' + records1[0].id + '\')';
+                }
+            } 
+            catch(err) 
+            { 
+                console.log(err);
+                devliIdNavUrl = '\\' + records1[0].Id;
+            } 
+        
+        
+        var devliDetails = 
+            <!-- '<a href="' + devliIdNavUrl + '">' + -->
+            "<h4 class='info_heading'>Suggested Delivery</h4>"+'<br/>';
+        
+        if(records1[0].Name !=null)
+        {
+            devliDetails =devliDetails+ records1[0].Name + '<br/>';
+        }
+        if(records1[0].ShippingStreet !=null)
+        {
+            devliDetails =devliDetails+ records1[0].ShippingStreet + '<br/>';
+        }
+        if(records1[0].ShippingCity !=null)
+        {
+            devliDetails =devliDetails+ records1[0].ShippingCity + '<br/>';
+        }
+        if(records1[0].ShippingPostalCode !=null)
+        {
+            devliDetails =devliDetails+ records1[0].ShippingPostalCode + '<br/>';
+        }
+        if(records1[0].Phone !=null)
+        {
+            devliDetails =devliDetails+ records1[0].Phone + '<br/>';
+        }
+        devliDetails=devliDetails+  '<br/>';  
+        
+        /*  var devliDetails = 
+                <!-- '<a href="' + devliIdNavUrl + '">' + -->
+             "<h4 class='info_heading'>Suggested Delivery</h4>"+'<br/>' + 
+            records1[0].Name + '</a><br/>' + 
+            records1[0].ShippingStreet + '<br/>' +     
+            records1[0].ShippingCity + '<br/>' +
+            records1[0].ShippingPostalCode + '<br/>'+ 
+            records1[0].Phone + '<br/>'+ '<br/>'; 
+                */
+                
+            //    "<div id='divID' class='callout_btn_div'><a id='testid' onclick='(function () {alert(\"infoWindow1\"+this.devliIdNavUrl);})();' class='myButton'>Select!</a></div>" + '<br/>' + '<br/>';
+            
+                // Create the callout that will pop up on the marker     
+                var infowindow1 = new google.maps.InfoWindow({ 
+                    content: devliDetails
+                    //content: html
+                });
+            
+        
+        // Add the action to open up the panel when it's marker is clicked      
+            google.maps.event.addListener(positionMarker1, 'click', function(){
+                infowindow1.open(map, positionMarker1);
+            }); 
+        
+      
+        // Set markers on the map from the @RemoteAction results
+        
+        var acct;
+        for(var i=0; i<accts.length;i++){
+            acct = accts[i];
+            console.log(accts[i]);
+            setupMarker();            
+        }
+        
+        // Resize map to neatly fit all of the markers
+        map.fitBounds(mapBoundary);
+        
+        function setupMarker()
+        {  
+            var acctNavUrl;
+            // Determine if we are in Salesforce1 and set navigation link appropriately
+            try
+            {
+                if(sforce.one)
+                {
+                    acctNavUrl = 'javascript:sforce.one.navigateToSObject(\'' + acct.Id + '\')';
+                }
+            } 
+            catch(err) 
+            { 
+                console.log(err);
+                acctNavUrl = '\\' + acct.Id;
+            } 
+            // var test = "<div class='saved'>" + "<div >test.test</div> <div class='remove'>[Remove]</div>  </div>";
+            // var btnvar = "<div class='saved'> " + " <div >test.test</div> <div class='remove'>[Remove]</div></div>";
+            var acctDetails='';
+            if(acct.Name !=null)
+            {
+                acctDetails = <!-- '<a href="' + acctNavUrl + '">' + -->
+                acct.Name + '</a><br/>' ;
+            }
+            if(acct.ShippingStreet !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingStreet + '<br/>';
+            }
+            if(acct.ShippingCity !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingCity + '<br/>';
+            }
+            if(acct.ShippingPostalCode !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingPostalCode + '<br/>';
+            }
+            if(acct.Phone !=null)
+            {
+                acctDetails =acctDetails+ acct.Phone + '<br/>';
+            }
+            acctDetails=acctDetails+  '<br/>';          
+            
+            /*var acctDetails = 
+                <!-- '<a href="' + acctNavUrl + '">' + -->
+                acct.Name + '</a><br/>' + 
+                acct.ShippingStreet + '<br/>' +     
+                acct.ShippingCity + '<br/>' +
+                acct.ShippingPostalCode + '<br/>'+ 
+                acct.Phone + '<br/>'+ '<br/>';
+            */
+           
+                
+                
+                //   "<div id='divID' class='callout_btn_div'><a id='testid' onclick='(function () {alert(\"infoWindow\"+this.acctNavUrl);})();' class='myButton'>Select!</a></div>" + '<br/>' + '<br/>';
+            
+                // Create the callout that will pop up on the marker     
+                var infowindow = new google.maps.InfoWindow({ 
+                    content: acctDetails
+                    //content: html
+                });
+            
+               var infowindow = new google.maps.InfoWindow({ 
+                    content: acctDetails
+                    //content: html
+                });
+         
+            
+            // Place the marker on the map   
+            var marker = new google.maps.Marker({
+                map: map,
+                position: new google.maps.LatLng( 
+                    acct.Location__Latitude__s, 
+                    acct.Location__Longitude__s)
+            });
+            mapBoundary.extend(marker.getPosition());
+            
+            // Add the action to open up the panel when it's marker is clicked      
+            google.maps.event.addListener(marker, 'click', function(){
+                infowindow.open(map, marker);
+            }); 
+            
+        }  
+                
+    } 
+    
+    function createMap1(lat,lon,accts,records)
+    { 
+        // Get the map div, and center the map at the proper geolocation
+        var currentPosition = new google.maps.LatLng(lat,lon);
+        var mapDiv = document.getElementById('map-canvas');
+        var map = new google.maps.Map(mapDiv, 
+                                      {
+                                          center: currentPosition, 
+                                          zoom: 13,
+                                          scrollwheel: false,
+                                          mapTypeId: google.maps.MapTypeId.ROADMAP
+                                      });
+        // Set a marker for the current location
+        var positionMarker = new google.maps.Marker({
+            map: map,
+            position: currentPosition,
+            icon: 'http://maps.google.com/mapfiles/ms/micons/green.png'
+        });
+        var mapBoundary = new google.maps.LatLngBounds();
+        mapBoundary.extend(currentPosition);
+        
+        var soIdNavUrl;
+        // Determine if we are in Salesforce1 and set navigation link appropriately
+        try
+        {
+            if(sforce.one)
+            {
+                soIdNavUrl = 'javascript:sforce.one.navigateToSObject(\'' + records[0].id + '\')';
+            }
+        } 
+        catch(err) 
+        { 
+            console.log(err);
+            soIdNavUrl = '\\' + records[0].Id;
+        } 
+        
+        
+        var soIdDetails = 
+            <!-- '<a href="' + soIdNavUrl + '">' + -->
+            "<h4 class='info_heading'>Customer Address</h4>"+'<br/>';
+            
+            if(records[0].Shipping_Street__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_Street__c + '<br/>';
+            }
+            if(records[0].Shipping_City__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_City__c + '<br/>';
+            }
+            if(records[0].Shipping_State__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_State__c + '<br/>';
+            }
+            if(records[0].Shipping_ZipCode__c !=null)
+            {
+                soIdDetails =soIdDetails+ records[0].Shipping_ZipCode__c + '<br/>';
+            }
+            soIdDetails=soIdDetails+  '<br/>';  
+        
+        /* var soIdDetails = 
+            <!-- '<a href="' + soIdNavUrl + '">' + -->
+            "<h4 class='info_heading'>Customer Address</h4>"+'<br/>' + 
+            // records[0].Name + '</a><br/>' + 
+            records[0].Shipping_Street__c + '<br/>' +     
+            records[0].Shipping_City__c + '<br/>' +
+            records[0].Shipping_State__c + '<br/>'+ 
+            records[0].Shipping_ZipCode__c + '<br/>';
+        */
+        //   "<div id='divID' class='callout_btn_div'><a id='testid' onclick='(function () {alert(\"infoWindow2\"+this.soIdNavUrl);})();' class='myButton'>Select!</a></div>" + '<br/>' + '<br/>';
+        
+        // Create the callout that will pop up on the marker     
+        var infowindow2 = new google.maps.InfoWindow({ 
+            content: soIdDetails
+        });
+        
+        // Add the action to open up the panel when it's marker is clicked      
+        google.maps.event.addListener(positionMarker, 'click', function(){
+            infowindow2.open(map, positionMarker);
+        }); 
+        
+        // Set markers on the map from the @RemoteAction results
+        
+        var acct;
+        for(var i=0; i<accts.length;i++){
+            acct = accts[i];
+            console.log(accts[i]);
+            setupMarker();            
+        }
+        
+        // Resize map to neatly fit all of the markers
+        map.fitBounds(mapBoundary);
+        
+        function setupMarker()
+        {  
+            var acctNavUrl;
+            // Determine if we are in Salesforce1 and set navigation link appropriately
+            try
+            {
+                if(sforce.one)
+                {
+                    acctNavUrl = 'javascript:sforce.one.navigateToSObject(\'' + acct.Id + '\')';
+                }
+            } 
+            catch(err) 
+            { 
+                console.log(err);
+                acctNavUrl = '\\' + acct.Id;
+            } 
+            // var test = "<div class='saved'>" + "<div >test.test</div> <div class='remove'>[Remove]</div>  </div>";
+            // var btnvar = "<div class='saved'> " + " <div >test.test</div> <div class='remove'>[Remove]</div></div>";
+            
+            
+            var acctDetails='';
+            if(acct.Name !=null)
+            {
+                acctDetails = <!-- '<a href="' + acctNavUrl + '">' + -->
+                acct.Name + '</a><br/>' ;
+            }
+            if(acct.ShippingStreet !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingStreet + '<br/>';
+            }
+            if(acct.ShippingCity !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingCity + '<br/>';
+            }
+            if(acct.ShippingPostalCode !=null)
+            {
+                acctDetails =acctDetails+ acct.ShippingPostalCode + '<br/>';
+            }
+            if(acct.Phone !=null)
+            {
+                acctDetails =acctDetails+ acct.Phone + '<br/>';
+            }
+            acctDetails=acctDetails+  '<br/>';  
+            
+            
+            /*var acctDetails = 
+                <!-- '<a href="' + acctNavUrl + '">' + -->
+                acct.Name + '</a><br/>' + 
+                acct.ShippingStreet + '<br/>' +     
+                acct.ShippingCity + '<br/>' +
+                acct.ShippingPostalCode + '<br/>'+ 
+                acct.Phone + '<br/>'+ '<br/>';
+            */
+            
+            //   "<div id='divID' class='callout_btn_div'><a id='testid' onclick='(function () {alert(\"infoWindow\"+this.acctNavUrl);})();' class='myButton'>Select!</a></div>" + '<br/>' + '<br/>';
+            
+            // Create the callout that will pop up on the marker     
+            var infowindow = new google.maps.InfoWindow({ 
+                content: acctDetails
+                //content: html
+            });
+            
+            var infowindow = new google.maps.InfoWindow({ 
+                content: acctDetails
+                //content: html
+            });
+            
+            
+            // Place the marker on the map   
+            var marker = new google.maps.Marker({
+                map: map,
+                position: new google.maps.LatLng( 
+                    acct.Location__Latitude__s, 
+                    acct.Location__Longitude__s)
+            });
+            mapBoundary.extend(marker.getPosition());
+            
+            // Add the action to open up the panel when it's marker is clicked      
+            google.maps.event.addListener(marker, 'click', function(){
+                infowindow.open(map, marker);
+            }); 
+            
+        }  
+    } 
+    // Fire the initialize function when the window loads
+    google.maps.event.addDomListener(window, 'load', initialize);
+    
+    </script>  
+    
+    <body style="font-family: Arial; border: 0 none;">
+        
+        <!--  All content is rendered by the Google Maps code -->
+        <!--  This minimal HTML justs provide a target for GMaps to write to -->
+        
+        <div id="map-canvas"></div>
+    </body>
+</apex:page>

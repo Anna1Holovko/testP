@@ -1,0 +1,63 @@
+<!-- Displays the Related List of Configurable Items in Products related to that Product -->
+
+<apex:page standardController="Products__c" extensions="ProductsRelatedList">
+    <apex:form >
+        <style>
+            .sfdc_richtext img {
+            border: 0;
+            width: 70px !important; 
+            height: 45px !important;
+            }
+            .apexp .bPageBlock.apexDefaultPageBlock .pbBody {
+            margin: 0;
+            }
+            .bPageBlock .detailList .dataCol {
+            width: 0 !important;
+            }
+            .bPageBlock .detailList .labelCol {
+            width: 0 !important;
+            }
+            .bPageBlock .labelCol{
+            padding-right: 0px !important; 
+            padding-left: 0px !important;
+            }
+            .bPageBlock .dataCol {
+            padding-right: 0px !important;
+            padding-left: 5px;
+            }
+            .price_fields{
+            padding-right: 5px !important;white-space: nowrap !important;text-align: right !important;
+            }
+            img.checkImg {
+            width: 21px;
+            height: 16px;
+            }
+            img{width:75px;height:45px;}
+            .col-header {
+            text-align:center;
+            }
+        </style> 
+        <apex:pageblock >
+            <apex:pageblocksection >
+                <div style="width:100%;float:left;">
+                    <apex:commandlink action="{!newProduct}" target="_blank" style="margin-left:400px;text-decoration:none">
+                        <apex:commandbutton value="New Configurable Item" />
+                    </apex:commandlink>
+                </div>
+                <apex:pageblocktable value="{!relatedProducts}" var="item" width="100%" rendered="{!relatedProducts.size>0}">
+                    <apex:column headervalue="Product Name">
+                        <a href="/{!item.id}" target="_blank">{!item.name}</a>
+                    </apex:column>
+                    <apex:column headervalue="Configuration Item">
+                        <a href="/{!productSingleJunctionMap[item.id].Id}" target="_blank">{!productSingleJunctionMap[item.id].name}</a>
+                    </apex:column>
+                    <apex:column value="{!item.SKU__c}" headerclass="col-header" style="text-align:center;" />
+                    <apex:column headervalue="Manufacturer Name" value="{!item.Select_Manufacturer__r.name}" headerclass="col-header" style="text-align:center;" />
+                    <apex:column value="{!item.Status__c}" headerclass="col-header" style="text-align:center;" />
+                    <apex:column value="{!item.Sales_Price__c}" headerclass="col-header" style="text-align:center;" />
+                    <apex:column value="{!item.ProductImage__c}" headerclass="col-header" style="text-align:center;" />
+                </apex:pageblocktable>
+            </apex:pageblocksection>
+        </apex:pageblock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,199 @@
+<apex:component >
+    <apex:attribute name="soRelatedList" description="" type="map" />
+    <apex:attribute name="isBunbleExist" description="" type="Boolean" />
+    <apex:attribute name="isCancelledTable" description="" type="Boolean" />
+    <apex:attribute name="SO_Obj" description="" type="Sales_Order__c" />
+
+    <apex:pageBlockSection collapsible="false" columns="1">
+        <apex:pageBlockTable value="{!soRelatedList}" var="item" width="100%">
+            <apex:column rendered="{!if($Profile.Name == 'System Administrator' || ($UserRole.Name == 'Processing Dept. Staff'|| $UserRole.Name == 'Billing and Shipping Dept. Staff'  || $UserRole.Name == 'Processing Dept. Manager'),true,false)}">
+                <apex:inputCheckbox id="checkBoxID" value="{!soRelatedList[item].selected}" onclick="var isChecked=document.getElementById('{!$Component.checkBoxID}').checked;isCheck(isChecked);"
+                    rendered="{!if((soRelatedList[item].SoItem.Products__r.recordtype.name != 'Protection Plan' && soRelatedList[item].SoItem.Item__c=='Processing'),true,false)}"
+                />
+            </apex:column>
+            <apex:column headerValue="Items No.">
+                <apex:outputLink value="/{!soRelatedList[item].SoItem.id}" target="_blank">{!soRelatedList[item].SoItem.name}</apex:outputLink>
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" headerValue="Image" styleClass="price_fields">
+                <apex:image value="{!soRelatedList[item].SoItem.ProductImageUrl__c}" style="width:75px;height:45px;" />
+            </apex:column>
+            <apex:column headerValue="Products">
+                <apex:outputLink value="/{!soRelatedList[item].SoItem.Config_Product__c}" rendered="{!if(soRelatedList[item].SoItem.Config_Product__c != null,true,false)}"
+                    target="_blank">{!soRelatedList[item].SoItem.Product_Name__c}</apex:outputLink>
+                <apex:outputLink value="/{!soRelatedList[item].SoItem.Products__c}" rendered="{!if((soRelatedList[item].SoItem.Config_Product__c == null && soRelatedList[item].SoItem.Products__c != Null),true,false)}"
+                    target="_blank">{!soRelatedList[item].SoItem.Product_Name__c}</apex:outputLink>
+            </apex:column>
+            <apex:column value="{!soRelatedList[item].SoItem.ProductSKU__c}" />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Manufacturer__c}" style="text-align:center"
+            />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.FedExable__c}" style="text-align:center"
+            />
+            <apex:column headerValue="Unit Price" headerClass="pageblocktable_colHeadr" styleClass="price_fields">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.Unit_Price__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" headerValue="Price" styleClass="price_fields">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.Price__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" headerValue="Qty" styleClass="price_fields">
+                <!-- <span style="font-size: 25px; color:red; text-align: left;" >{! if ((soRelatedList[item].SoItem.Quantity_Invoiced__c > soRelatedList[item].SoItem.Quantity__c + soRelatedList[item].SoItem.Quantity_Refunded__c), "*", "")}</span>-->
+                <apex:outputtext value="Ordered: {!soRelatedList[item].SoItem.Quantity__c}" />
+                <apex:outputPanel rendered="{!SO_Obj.Payment_Status__c == 'Partially Refunded' || SO_Obj.Payment_Status__c == 'Refund Required' || SO_Obj.Payment_Status__c == 'Refund Failed' || SO_Obj.Payment_Status__c == 'Received' || SO_Obj.Payment_Status__c == 'Capture-Failed' || SO_Obj.Payment_Status__c == 'Declined' || SO_Obj.Payment_Status__c = 'Partial'}">
+                    <br/>
+                    <apex:outputtext value="Invoiced: {!soRelatedList[item].SoItem.Quantity_Invoiced__c}" />
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!SO_Obj.Payment_Status__c == 'Partially Refunded' || SO_Obj.Payment_Status__c == 'Refund Required' || SO_Obj.Payment_Status__c == 'Refund Failed'}">
+                    <br/>
+                    <apex:outputtext value="Refunded: {!soRelatedList[item].SoItem.Quantity_Refunded__c}" />
+                </apex:outputPanel>
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" headerValue="Item Status" styleClass="price_fields">
+                <apex:outputtext value="{!soRelatedList[item].SoItem.Item__c}" rendered="{!!if(isCancelledTable || (soRelatedList[item].SoItem.Products__r.recordtype.name == 'Bundled' || soRelatedList[item].SoItem.Products__r.recordtype.name == 'Protection Plan'),true,false)}"
+                />
+                <apex:outputtext value="{!soRelatedList[item].SoItem.Cancelled_Status__c}" rendered="{!!if(!isCancelledTable && (soRelatedList[item].SoItem.Products__r.recordtype.name == 'Bundled' || soRelatedList[item].SoItem.Products__r.recordtype.name == 'Protection Plan'),true,false)}"
+                />
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Sub_Total__c}" styleClass="price_fields"
+                rendered="{!!isCancelledTable}" />
+            <apex:column headerClass="pageblocktable_colHeadr" headerValue="Dis.Amt" styleClass="price_fields" rendered="{!!isCancelledTable}">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.DiscountAmount__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column headerValue="Tax Amt" styleClass="price_fields" rendered="{!!isCancelledTable}">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.Tax_Amount__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column headerValue="Product Cost" styleClass="price_fields" rendered="{!!isCancelledTable}">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.Product_Cost__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Row_Total__c}" styleClass="price_fields"
+                rendered="{!!isCancelledTable}" />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Price_For_Credit_Memo__c}" styleClass="price_fields"
+                rendered="{!isCancelledTable}" />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.DiscountAmount_For_Credit_Memo__c}"
+                styleClass="price_fields" rendered="{!isCancelledTable}" />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Tax_Amount_For_Credit_Memo__c}" styleClass="price_fields"
+                rendered="{!isCancelledTable}" />
+            <apex:column headerClass="pageblocktable_colHeadr" value="{!soRelatedList[item].SoItem.Row_Total_For_Credit_Memo__c}" styleClass="price_fields"
+                rendered="{!isCancelledTable}" />
+            <apex:column headerValue="Custom Price" headerClass="pageblocktable_colHeadr" styleClass="price_fields" rendered="{!!isCancelledTable}">
+                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                    <apex:param value="{!soRelatedList[item].SoItem.Custom_Price__c}" />
+                </apex:outputText>
+            </apex:column>
+            <apex:column breakBefore="true" colspan="14" width="100%" style="border:0px solid red" rendered="{!isBunbleExist}">
+                <apex:outputPanel layout="block" styleClass="popup_outputpanel" id="panelid" rendered="{!if(soRelatedList[item].SoItem.Products__r.recordtype.name=='Bundled',true,false)}">
+                    <table id="bundle-table" class="table table-striped table-bordered dataTable" cellspacing="0" role="grid" style="width: 100%;">
+                        <thead style="font-weight:bold;">
+                            <th style="width: 73px;"></th>
+                            <th style="text-align: center;width: 7%;">
+                                <b>Items No.</b>
+                            </th>
+                            <th style="width: 7%;text-align: center">
+                                <b>Image</b>
+                            </th>
+                            <th style="width: 18%;">
+                                <b>Product</b>
+                            </th>
+                            <th style="width: 12%;">
+                                <b>SKU</b>
+                            </th>
+                            <th style="width: 10%;">
+                                <b>Manufacturer</b>
+                            </th>
+                            <th style="width: 8%;">
+                                <b>FedExable</b>
+                            </th>
+                            <th style="width: 11%;">
+                                <b>Item Status</b>
+                            </th>
+                            <th style="width: 8%;">
+                                <b>Unit Price</b>
+                            </th>
+                            <th style="width: 8%;">
+                                <b>Price</b>
+                            </th>
+                            <th style="width: 8%;">
+                                <b>Product Cost</b>
+                            </th>
+                            <th style="width: 15%; white-space: nowrap">
+                                <b>Included Quantity</b>
+                            </th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <div>
+                                    <apex:repeat value="{!soRelatedList[item].bundleList}" var="bundleItem" rendered="{!if(soRelatedList[item].bundleList != null,true,false)}">
+                                        <tr id="Bundel" role="row">
+                                            <td style="width: 73px;"></td>
+                                            <td align="center">
+                                                <apex:outputLink value="/{!bundleItem.id}" target="_blank">{!bundleItem.name}</apex:outputLink>
+                                            </td>
+                                            <td>
+                                                <apex:image value="{!bundleItem.ProductImageUrl__c}" style="width:75px;height:45px;" />
+                                            </td>
+                                            <td>
+                                                <apex:outputLink value="/{!bundleItem.Config_Product__c}" rendered="{!if(bundleItem.Config_Product__c != null,true,false)}"
+                                                    target="_blank">{!bundleItem.Product_Name__c}</apex:outputLink>
+                                                <apex:outputLink value="/{!bundleItem.Bundle_Item__r.Product__c}" rendered="{!if((bundleItem.Config_Product__c == null && soRelatedList[item].SoItem.Products__c != Null),true,false)}"
+                                                    target="_blank">{!bundleItem.Product_Name__c}</apex:outputLink>
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{!bundleItem.ProductSKU__c}" />
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{!bundleItem.Manufacturer__c}" />
+                                            </td>
+                                            <td style="text-align:center">
+                                                <apex:outputText value="{!bundleItem.FedExable__c}" />
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{!bundleItem.Item__c}" rendered="{!!isCancelledTable}" />
+                                                <apex:outputText value="{!bundleItem.Cancelled_Status__c}" rendered="{!isCancelledTable}" />
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                                                    <apex:param value="{!bundleItem.Unit_Price__c}" />
+                                                </apex:outputText>
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                                                    <apex:param value="{!bundleItem.Price__c}" />
+                                                </apex:outputText>
+                                            </td>
+                                            <td>
+                                                <apex:outputText value="{0, number, $#,###,###,###,##0.00}" styleClass="price_fields">
+                                                    <apex:param value="{!bundleItem.Product_Cost__c}" />
+                                                </apex:outputText>
+                                            </td>
+                                            <td style="text-align:center;">
+                                                <!--apex:outputtext value="{!bundleItem.Quantity__c}"/-->
+                                                <!--<span style="font-size: 25px; color:red; text-align:center;" >{! if ((bundleItem.Quantity_Invoiced__c > bundleItem.Quantity__c * soRelatedList[item].SoItem.Quantity__c + bundleItem.Quantity_Refunded__c), "*", "")}</span>-->
+                                                <apex:outputtext value="Ordered: {!bundleItem.Quantity__c * soRelatedList[item].SoItem.Quantity__c}" />
+                                                <apex:outputPanel rendered="{!SO_Obj.Payment_Status__c == 'Partially Refunded' || SO_Obj.Payment_Status__c == 'Refund Required' || SO_Obj.Payment_Status__c == 'Refund Failed' || SO_Obj.Payment_Status__c == 'Received' || SO_Obj.Payment_Status__c == 'Capture-Failed' || SO_Obj.Payment_Status__c == 'Declined' || SO_Obj.Payment_Status__c = 'Partial'}">
+                                                    <br/>
+                                                    <apex:outputtext value="Invoiced: {!bundleItem.Quantity_Invoiced__c}" />
+                                                </apex:outputPanel>
+                                                <apex:outputPanel rendered="{!SO_Obj.Payment_Status__c == 'Partially Refunded' || SO_Obj.Payment_Status__c == 'Refund Required' || SO_Obj.Payment_Status__c == 'Refund Failed'}">
+                                                    <br/>
+                                                    <apex:outputtext value="Refunded: {!bundleItem.Quantity_Refunded__c}" />
+                                                </apex:outputPanel>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </div>
+                            </tr>
+                        </tbody>
+                    </table>
+                </apex:outputPanel>
+            </apex:column>
+        </apex:pageBlockTable>
+    </apex:pageBlockSection>
+</apex:component>

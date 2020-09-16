@@ -1,0 +1,10 @@
+<apex:page standardController="Shipment__c" extensions="BOLExtension">
+   
+    <center><br/><br/> 
+        <apex:form >
+            <apex:commandButton value="Save As Attachment" action="{!pdf}" title="Save below PDF as Attachment" styleClass="btn blue_btn_style" style="width: 185px !important;margin-right: 20px;"/>&nbsp;&nbsp;
+            <apex:commandButton value="Go To Detail Page" action="{!Cancel}" title="Go to Quote Detail Page" styleClass="btn blue_btn_style" style="width: 185px !important;margin-right: 20px;"/>
+        </apex:form><br/>
+        <apex:iframe src="{!iframeurl}" height="650px" width="700px" scrolling="false"/>
+   </center>
+</apex:page>
